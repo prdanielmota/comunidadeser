@@ -1,0 +1,283 @@
+[
+    {
+        "id": "b98987ebee5e798b",
+        "titulo": "Semana Santa 2026 - O Drama da Paixão",
+        "descricao": "🕊️ Semana Santa 2026\n\nO Drama da Paixão\n\nSeja muito bem-vindo(a)! 🤍\n\nEssa história mudou o mundo, e se você permitir vai mudar a sua vida!\n\nTeremos a participação do Pr. Gilmar Batistoti como convidado especial, trazendo mensagens que vão tocar profundamente o coração. 🙏\n\n📅 28\/03 a 04\/04\n\n28\/03 e 04\/04 - 10h30m\n29\/03 a 03\/04 - 19h30m",
+        "data_inicio": "2026-03-28T09:30",
+        "data_fim": "2026-04-04T12:00",
+        "local": "Comunidade Ser",
+        "created_at": "2026-03-22T15:35:33+00:00",
+        "confirmacoes": [
+            {
+                "wpp": "92993446715",
+                "nome": "Daniel Mota",
+                "token": "f469db631860f1fb9e2e3a740f69c7be",
+                "confirmed_at": "2026-03-22T15:35:47+00:00",
+                "checked_in_at": "2026-03-22T15:40:32+00:00"
+            },
+            {
+                "wpp": "92993428452",
+                "nome": "Orlando Garcia",
+                "token": "baceb678be3f8e60cac52fb3c873b564",
+                "confirmed_at": "2026-03-22T15:52:51+00:00",
+                "checked_in_at": "2026-03-22T15:54:08+00:00"
+            },
+            {
+                "wpp": "92992751572",
+                "nome": "Rainara Raquel",
+                "token": "d0b27c6b05615d95826b30bbde5e4810",
+                "confirmed_at": "2026-03-22T17:10:39+00:00"
+            },
+            {
+                "wpp": "11983279518",
+                "nome": "Eudes Baraúna Santos",
+                "token": "358f8473afa4971c09d858813c012dfa",
+                "confirmed_at": "2026-03-22T18:37:01+00:00",
+                "checked_in_at": "2026-03-22T18:37:46+00:00"
+            },
+            {
+                "wpp": "92993000945",
+                "nome": "Karina Sena",
+                "token": "37dd693fbb44464ecec8ebd7ba2a67f3",
+                "confirmed_at": "2026-03-22T21:31:17+00:00",
+                "checked_in_at": "2026-03-22T21:35:52+00:00"
+            },
+            {
+                "wpp": "92994700017",
+                "nome": "Aylz Senna",
+                "token": "eb0330cfd6f31571c68e27bdd41a8e20",
+                "confirmed_at": "2026-03-22T21:36:26+00:00",
+                "checked_in_at": "2026-03-22T21:36:48+00:00"
+            },
+            {
+                "wpp": "92988332311",
+                "nome": "CINTHIA CHRYSTINA MATOS SA",
+                "token": "0e14da05b7ba5f5c5a1d916596ca3603",
+                "confirmed_at": "2026-03-23T12:11:08+00:00"
+            },
+            {
+                "wpp": "92994325987",
+                "nome": "Deize Pimentel Ferreira",
+                "token": "4aac9b0cb227573434529fbed37d482e",
+                "confirmed_at": "2026-03-23T12:37:54+00:00"
+            },
+            {
+                "wpp": "92981644148",
+                "nome": "Kedley Angelo",
+                "token": "89a41b46dae87f1b5002a8b5310e1d60",
+                "confirmed_at": "2026-03-23T14:36:50+00:00"
+            },
+            {
+                "wpp": "19999061203",
+                "nome": "Sílvia Simone de Souza e Silva Pereira",
+                "token": "b2f3d8b6811eccb81ca09c0f85ae9669",
+                "confirmed_at": "2026-03-23T14:42:41+00:00"
+            },
+            {
+                "wpp": "92993175626",
+                "nome": "Nelcilene soares de oliveira",
+                "token": "1e61b902835aec318edc93f2bc26c5ea",
+                "confirmed_at": "2026-03-23T14:51:47+00:00"
+            },
+            {
+                "wpp": "92981332574",
+                "nome": "Waldison pereira de Souza",
+                "token": "c4f6f0a1780ab005ff81f4ba5ea3b19c",
+                "confirmed_at": "2026-03-23T15:43:18+00:00"
+            },
+            {
+                "wpp": "92984169436",
+                "nome": "Lucas Bernardo Sá dos Santos",
+                "token": "7c979837e75d1b925834a17ca5357931",
+                "confirmed_at": "2026-03-23T22:48:14+00:00"
+            },
+            {
+                "wpp": "93991334596",
+                "nome": "Guilherme Storch",
+                "token": "7ca46f8e66d253420bec02c8b72b842f",
+                "confirmed_at": "2026-03-23T23:29:45+00:00"
+            },
+            {
+                "wpp": "92991764625",
+                "nome": "Evellyne Rose Cazuza Corrêa",
+                "token": "34314709213cfce9327515310b23f945",
+                "confirmed_at": "2026-03-23T23:29:51+00:00"
+            },
+            {
+                "wpp": "92991600045",
+                "nome": "Daniel Batista Pinheiro",
+                "token": "9b48aa0d14f8146d0eacee48565a3cab",
+                "confirmed_at": "2026-03-23T23:30:53+00:00"
+            },
+            {
+                "wpp": "92992219940",
+                "nome": "Marcilene da silva medeiros",
+                "token": "15b8c3c2d8792e44266d49a6e031f52d",
+                "confirmed_at": "2026-03-23T23:31:01+00:00"
+            },
+            {
+                "wpp": "92992000921",
+                "nome": "Ana Carolina César de Carvalho Pinheiro",
+                "token": "da3d26df73f3494be2920a0167c29859",
+                "confirmed_at": "2026-03-23T23:31:06+00:00"
+            },
+            {
+                "wpp": "92982778233",
+                "nome": "Endryus Oliveira",
+                "token": "0079e4308e14d28f38da124f8ea2c6c2",
+                "confirmed_at": "2026-03-23T23:32:17+00:00"
+            },
+            {
+                "wpp": "92984007640",
+                "nome": "Eliana Dos Reis Costa",
+                "token": "dd4833e84eb1beeba4570136bd99c46f",
+                "confirmed_at": "2026-03-24T12:21:14+00:00"
+            },
+            {
+                "wpp": "92991163266",
+                "nome": "Emerson Campanholo",
+                "token": "8275c506f564be0b84f3c5b600fafa4e",
+                "confirmed_at": "2026-03-24T14:57:27+00:00",
+                "checked_in_at": "2026-03-24T14:58:05+00:00"
+            },
+            {
+                "wpp": "92993923447",
+                "nome": "Eduarda Carvalho de Arruda",
+                "token": "557c2163c1909f597b29848f9e9266e7",
+                "confirmed_at": "2026-03-24T15:42:26+00:00"
+            },
+            {
+                "wpp": "92984218475",
+                "nome": "Talita da Silva Ribeiro Lima",
+                "token": "ffe657766d430a9e393e4768bbdb2582",
+                "confirmed_at": "2026-03-24T18:19:51+00:00"
+            },
+            {
+                "wpp": "5592992634021",
+                "nome": "Amanda Hounsell",
+                "token": "a53fbb3eaf94821be365dd75b7c680c5",
+                "confirmed_at": "2026-03-24T20:16:52+00:00"
+            },
+            {
+                "wpp": "92991517502",
+                "nome": "",
+                "token": "194473c6fd2704a126e29e7b677f58cd",
+                "confirmed_at": "2026-03-24T21:06:07+00:00"
+            },
+            {
+                "wpp": "9284085652",
+                "nome": "Lúcia Santiago da Câmara",
+                "token": "cf7249c60a39fa437e5954734ade092a",
+                "confirmed_at": "2026-03-24T21:28:01+00:00"
+            },
+            {
+                "wpp": "92995367606",
+                "nome": "",
+                "token": "ba0d98a26057f961adf3d13ca99cb062",
+                "confirmed_at": "2026-03-24T21:48:59+00:00"
+            },
+            {
+                "wpp": "92981558223",
+                "nome": "Yesenia Maria Silva Hernandez",
+                "token": "be73a454c7cf046b23d252a7c2e486bd",
+                "confirmed_at": "2026-03-24T22:13:18+00:00"
+            },
+            {
+                "wpp": "92986453084",
+                "nome": "Ronaldo Castillo Camargo",
+                "token": "0e54593af6c01b23dd4da358b357862e",
+                "confirmed_at": "2026-03-25T03:03:37+00:00"
+            },
+            {
+                "wpp": "92994161004",
+                "nome": "",
+                "token": "dc8f9dad99c853428cbd929ea5c28d8d",
+                "confirmed_at": "2026-03-25T19:24:17+00:00"
+            },
+            {
+                "wpp": "92984585758",
+                "nome": "Brasília Pereira de Menezes",
+                "token": "37a3285512ea4038813641592a5876a6",
+                "confirmed_at": "2026-03-26T17:59:14+00:00"
+            },
+            {
+                "wpp": "92991944502",
+                "nome": "Webster Diniz Pereira",
+                "token": "1ffb6df85795c2e348cfc1788dac5a7f",
+                "confirmed_at": "2026-03-27T11:49:36+00:00"
+            },
+            {
+                "wpp": "92991573415",
+                "nome": "Simone Silva",
+                "token": "b1f723ab00d5a912d91129a3a10f0272",
+                "confirmed_at": "2026-03-27T12:53:25+00:00"
+            },
+            {
+                "wpp": "92981503573",
+                "nome": "Harysson Coutinho",
+                "token": "4b06c651e410f419b93d23caf6edf2c3",
+                "confirmed_at": "2026-03-27T16:09:51+00:00"
+            },
+            {
+                "wpp": "92981420333",
+                "nome": "Maciana Arruda Rebelo",
+                "token": "ba6d48e731673c3f5422efac44a467fb",
+                "confirmed_at": "2026-03-27T16:13:22+00:00"
+            },
+            {
+                "wpp": "92982161203",
+                "nome": "Dalvina Machado Costa",
+                "token": "8ce268132519684c40be93e46e754d3a",
+                "confirmed_at": "2026-03-28T12:09:42+00:00"
+            },
+            {
+                "wpp": "92981677718",
+                "nome": "Jaqueline da Silva Ferreira",
+                "token": "7ad2c572bc19b34d40a2151e9670f1e9",
+                "confirmed_at": "2026-03-28T12:21:38+00:00"
+            },
+            {
+                "wpp": "92999017040",
+                "nome": "Ivanilde Magalhães de Azevedo",
+                "token": "680a171ecd8c27a0b68098dd4dc66e5f",
+                "confirmed_at": "2026-03-28T13:07:05+00:00"
+            },
+            {
+                "wpp": "92981757078",
+                "nome": "Jessica",
+                "token": "961dd70f42f20afc10a1fc8e296b2645",
+                "confirmed_at": "2026-03-28T13:41:46+00:00"
+            },
+            {
+                "wpp": "92991394053",
+                "nome": "Mirlene Telles de Souza",
+                "token": "e5f27a4848a4eb076820c3dd5cfe9383",
+                "confirmed_at": "2026-03-28T13:49:00+00:00"
+            },
+            {
+                "wpp": "92994407331",
+                "nome": "Yasmin dos Santos Pinheiro Martins",
+                "token": "d2e9176a5a406033e3dbbe44ae9f9d1c",
+                "confirmed_at": "2026-03-28T15:28:06+00:00"
+            },
+            {
+                "wpp": "92994700460",
+                "nome": "Joberson Raimundo oliveira da Silva",
+                "token": "1b826e6824808803dd6348afeccc0377",
+                "confirmed_at": "2026-03-28T17:05:10+00:00"
+            },
+            {
+                "wpp": "92991862999",
+                "nome": "Dinazira Monteiro Vieira de Souza",
+                "token": "249f2a603d44f00c9c4b987b609b2aa3",
+                "confirmed_at": "2026-03-29T23:50:56+00:00"
+            },
+            {
+                "wpp": "92984181206",
+                "nome": "Ângela Maria Lelis de Oliveira",
+                "token": "4f905ed6f64a044dd3f6a95e5aabf5e5",
+                "confirmed_at": "2026-03-30T02:11:08+00:00"
+            }
+        ]
+    }
+]

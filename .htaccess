@@ -1,0 +1,20 @@
+# Comunidade SER - Portal Estático
+
+RewriteEngine On
+RewriteBase /
+
+# Garante que o index.html seja a prioridade
+DirectoryIndex index.html
+
+# Não aplica regras para arquivos ou diretórios que existem fisicamente
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Se a URL solicitada não tiver extensão, tenta encontrar o arquivo HTML (ex: /classebiblica -> /classebiblica.html)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.*)$ $1.html [L]
+
+# Redireciona links antigos que sumiram para a Home
+# RewriteRule ^(contact|anuncios|casa)/?$ / [R=301,L]

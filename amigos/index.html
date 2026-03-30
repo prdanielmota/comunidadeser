@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amigos - Comunidade Ser</title>
+<link rel="stylesheet" href="/assets/ser.css">
+<style>
+body{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:2rem 1rem;
+  position:relative;
+}
+@media(max-width:639px){
+  body{justify-content:flex-start;padding-top:2rem;}
+}
+
+/* ── CARD ── */
+.card{
+  width:100%;max-width:420px;
+  border-radius:24px;
+  animation:riseIn .5s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ── HEADER ── */
+.card-top{
+  padding:2.25rem 2rem 1.75rem;
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+
+.logo-mark{
+  width:48px;height:48px;
+  background:var(--gold-glow);
+  border:1px solid rgba(201,168,76,0.3);
+  border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:1.25rem;
+}
+.logo-mark svg{width:22px;height:22px;color:var(--gold)}
+
+.card-top h1{
+  font-family:'Playfair Display',serif;
+  font-size:1.6rem;font-weight:700;
+  color:var(--text);
+  line-height:1.2;
+  margin-bottom:.35rem;
+}
+
+.card-top p{font-size:.875rem;color:var(--text-muted);font-weight:300}
+
+/* progress bar */
+.progress-track{
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:2px;
+  background:var(--border);
+}
+.progress-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--gold),var(--gold-light));
+  transition:width .5s cubic-bezier(.4,0,.2,1);
+  width:33.33%;
+}
+
+/* ── BODY ── */
+.card-body{padding:1.75rem 2rem}
+
+/* steps */
+.step-row{
+  display:flex;align-items:center;gap:6px;
+  margin-bottom:1.75rem;
+}
+.step-pip{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--border-active);
+  transition:all .3s;
+}
+.step-pip.done{background:var(--gold)}
+.step-pip.active{
+  background:var(--gold);
+  width:20px;border-radius:3px;
+}
+.step-label{
+  margin-left:auto;
+  font-size:.75rem;color:var(--text-muted);
+  letter-spacing:.04em;
+}
+
+/* field */
+.field{margin-bottom:1.1rem}
+.field label{
+  display:block;
+  font-size:.8rem;font-weight:500;
+  color:var(--text-dim);
+  margin-bottom:.5rem;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+}
+
+.input-row{position:relative;display:flex;align-items:center}
+.input-icon{
+  position:absolute;left:14px;
+  color:var(--text-muted);
+  display:flex;align-items:center;
+  pointer-events:none;
+}
+.input-icon svg{width:16px;height:16px}
+
+input[type=text],input[type=tel],input[type=number]{
+  padding:.8rem 1rem .8rem 2.6rem;
+  font-size:.9375rem;font-weight:400;
+  -webkit-appearance:none;
+}
+input:focus{background:#1E2A3A}
+input.has-error{
+  border-color:rgba(231,76,60,0.5);
+  box-shadow:0 0 0 3px rgba(231,76,60,0.1);
+}
+
+.field-error{
+  font-size:.78rem;color:var(--red);
+  margin-top:.375rem;
+  display:none;
+}
+.field-error.show{display:block}
+
+/* OTP */
+.otp-wrap{
+  display:flex;gap:8px;justify-content:center;
+  margin:1.5rem 0;
+}
+.otp-wrap input{
+  width:50px;height:56px;
+  text-align:center;font-size:1.4rem;font-weight:600;
+  padding:0;
+  border-radius:var(--radius-sm);
+}
+.otp-wrap input.has-error{border-color:rgba(231,76,60,.5);animation:shake .4s both}
+
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-5px)}
+  75%{transform:translateX(5px)}
+}
+
+/* ── BUTTONS ── */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;
+  padding:.85rem 1.25rem;
+  border:none;border-radius:var(--radius-sm);
+  font-family:'Outfit',sans-serif;
+  font-size:.9375rem;font-weight:500;
+  cursor:pointer;
+  transition:all .2s;
+  position:relative;overflow:hidden;
+}
+
+.btn-primary{
+  background:linear-gradient(135deg,var(--gold),var(--gold-light));
+  color:#0A0F1E;
+}
+.btn-primary::after{
+  content:'';
+  position:absolute;inset:0;
+  background:rgba(255,255,255,0);
+  transition:background .2s;
+}
+.btn-primary:hover:not(:disabled)::after{background:rgba(255,255,255,0.1)}
+.btn-primary:active:not(:disabled){transform:scale(.98)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+
+.btn-ghost{
+  background:transparent;
+  color:var(--text-muted);
+  font-size:.85rem;
+  padding:.6rem;
+  border:none;width:auto;
+  display:inline-flex;
+}
+.btn-ghost:hover{color:var(--gold)}
+
+/* spinner */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{
+  width:16px;height:16px;
+  border:2px solid rgba(10,15,30,0.3);
+  border-top-color:#0A0F1E;
+  border-radius:50%;
+  animation:spin .65s linear infinite;
+  display:none;
+}
+
+/* notice */
+.notice{
+  background:rgba(201,168,76,0.08);
+  border:1px solid rgba(201,168,76,0.2);
+  border-radius:var(--radius-sm);
+  padding:.9rem 1rem;
+  font-size:.8375rem;
+  color:rgba(240,237,232,0.75);
+  line-height:1.55;
+  margin-bottom:1.25rem;
+  display:flex;gap:10px;align-items:flex-start;
+}
+.notice svg{flex-shrink:0;width:15px;height:15px;color:var(--gold);margin-top:2px}
+
+.phone-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(201,168,76,0.12);
+  border:1px solid rgba(201,168,76,0.25);
+  border-radius:20px;
+  padding:2px 12px 2px 8px;
+  font-size:.8125rem;font-weight:500;
+  color:var(--gold-light);
+  margin:4px 0;
+}
+.phone-pill svg{width:12px;height:12px}
+
+/* resend */
+.resend-row{
+  text-align:center;
+  margin-top:1rem;
+  font-size:.8rem;color:var(--text-muted);
+}
+
+/* ── SUCCESS ── */
+.success-wrap{text-align:center;padding:.5rem 0 1rem}
+.success-ring{
+  width:72px;height:72px;
+  border-radius:50%;
+  background:rgba(46,204,113,0.1);
+  border:1.5px solid rgba(46,204,113,0.35);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 1.25rem;
+  animation:popIn .4s cubic-bezier(.34,1.56,.64,1) .1s both;
+}
+@keyframes popIn{
+  from{transform:scale(.5);opacity:0}
+  to{transform:scale(1);opacity:1}
+}
+.success-ring svg{width:32px;height:32px;color:#2ECC71}
+.success-wrap h2{
+  font-family:'Playfair Display',serif;
+  font-size:1.5rem;font-weight:700;
+  color:var(--text);margin-bottom:.5rem;
+}
+.success-wrap p{font-size:.875rem;color:var(--text-dim);line-height:1.6}
+.name-accent{color:var(--gold-light)}
+
+/* ── CONFIG COG ── */
+.cog-btn{
+  position:fixed;bottom:1.5rem;right:1.5rem;
+  width:42px;height:42px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:all .2s;
+  z-index:50;
+}
+.cog-btn:hover{border-color:var(--border-active);background:var(--surface2)}
+.cog-btn svg{width:18px;height:18px;color:var(--text-muted)}
+
+/* overlay */
+.overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(4px);
+  z-index:60;
+  opacity:0;pointer-events:none;
+  transition:opacity .3s;
+}
+.overlay.on{opacity:1;pointer-events:all}
+
+/* config drawer */
+.cfg-drawer{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-bottom:none;
+  border-radius:20px 20px 0 0;
+  padding:1.25rem 1.5rem 2rem;
+  z-index:70;
+  transform:translateY(100%);
+  transition:transform .35s cubic-bezier(.4,0,.2,1);
+  max-width:480px;
+  margin:0 auto;
+}
+.cfg-drawer.on{transform:translateY(0)}
+.cfg-handle{
+  width:32px;height:3px;
+  background:var(--border-active);
+  border-radius:2px;
+  margin:0 auto .75rem;
+}
+.cfg-drawer h3{
+  font-family:'Playfair Display',serif;
+  font-size:1.15rem;color:var(--text);
+  margin-bottom:.2rem;
+}
+.cfg-drawer .sub{font-size:.8rem;color:var(--text-muted);margin-bottom:1.25rem}
+.cfg-drawer .field label{color:var(--text-dim)}
+.cfg-drawer input{background:var(--bg)}
+.cfg-drawer .input-row svg{display:none}
+.cfg-drawer input{padding-left:1rem}
+.cfg-save{
+  width:100%;margin-top:.75rem;
+  padding:.75rem;
+  background:var(--gold);
+  color:#0A0F1E;
+  border:none;border-radius:var(--radius-sm);
+  font-family:'Outfit',sans-serif;
+  font-size:.9rem;font-weight:600;
+  cursor:pointer;
+  transition:background .2s;
+}
+.cfg-save:hover{background:var(--gold-light)}
+
+hr.div{
+  border:none;border-top:1px solid var(--border);
+  margin:1.25rem 0;
+}
+
+/* screen transition */
+.screen{animation:fadeSlide .3s cubic-bezier(.4,0,.2,1) both}
+@keyframes fadeSlide{
+  from{opacity:0;transform:translateX(20px)}
+  to{opacity:1;transform:translateX(0)}
+}
+
+/* footer */
+.card-foot{
+  padding:.875rem 2rem;
+  border-top:1px solid var(--border);
+  font-size:.75rem;color:var(--text-muted);
+  text-align:center;
+}
+
+@media(max-width:440px){
+  .card-body{padding:1.5rem}
+  .card-top{padding:1.75rem 1.5rem 1.5rem}
+  .otp-wrap input{width:42px;height:50px;font-size:1.25rem}
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <!-- header -->
+  <div class="card-top">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </div>
+    <h1 id="card-title">Cadastro / Login</h1>
+    <p id="card-sub">Cadastre-se ou acesse sua área</p>
+    <div class="progress-track"><div class="progress-fill" id="progress"></div></div>
+  </div>
+
+  <!-- body -->
+  <div class="card-body">
+
+    <!-- step dots -->
+    <div class="step-row">
+      <div class="step-pip active" id="pip1"></div>
+      <div class="step-pip" id="pip2"></div>
+      <div class="step-pip" id="pip3"></div>
+      <span class="step-label" id="step-lbl">Etapa 1 de 3</span>
+    </div>
+
+    <!-- ── TELA 1: DADOS ── -->
+    <div id="s1" class="screen">
+      <div class="field">
+        <label>Nome ou E-mail</label>
+        <div class="input-row">
+          <span class="input-icon" id="icon-nome">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </span>
+          <input type="text" id="f-nome" placeholder="Seu nome completo ou e-mail" autocomplete="name email">
+        </div>
+        <div class="field-error" id="e-nome">Informe seu nome (mínimo 2 palavras) ou um e-mail válido</div>
+      </div>
+
+      <div class="field">
+        <label>WhatsApp</label>
+        <div class="input-row">
+          <span class="input-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12 19.79 19.79 0 0 1 1.08 3.4 2 2 0 0 1 3.05 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z"/>
+            </svg>
+          </span>
+          <input type="tel" id="f-wpp" placeholder="(DD) 9XXXX-XXXX" autocomplete="tel" maxlength="16">
+        </div>
+        <div class="field-error" id="e-wpp">Número inválido — use o formato (DD) 9XXXX-XXXX</div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-enviar" onclick="enviarCodigo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+        <span id="btn-txt">Autenticar via WhatsApp</span>
+        <div class="spin" id="sp1"></div>
+      </button>
+    </div>
+
+    <!-- ── TELA 2: OTP ── -->
+    <div id="s2" class="screen" style="display:none">
+      <div class="notice">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <div>
+          Código enviado para<br>
+          <div class="phone-pill" id="pill-wpp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+            </svg>
+            <span></span>
+          </div>
+          Digite os 6 dígitos para confirmar seu número.
+        </div>
+      </div>
+
+      <div class="otp-wrap" id="otp-inputs">
+        <input type="number" min="0" max="9" class="otp" oninput="oIn(this,0)" onkeydown="oKey(event,this,0)" onpaste="oPaste(event)">
+        <input type="number" min="0" max="9" class="otp" oninput="oIn(this,1)" onkeydown="oKey(event,this,1)">
+        <input type="number" min="0" max="9" class="otp" oninput="oIn(this,2)" onkeydown="oKey(event,this,2)">
+        <input type="number" min="0" max="9" class="otp" oninput="oIn(this,3)" onkeydown="oKey(event,this,3)">
+        <input type="number" min="0" max="9" class="otp" oninput="oIn(this,4)" onkeydown="oKey(event,this,4)">
+        <input type="number" min="0" max="9" class="otp" oninput="oIn(this,5)" onkeydown="oKey(event,this,5)">
+      </div>
+
+      <div class="field-error show" id="e-otp" style="text-align:center;visibility:hidden">
+        Código incorreto. Verifique e tente novamente.
+      </div>
+
+      <button class="btn btn-primary" id="btn-verify" onclick="verificar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span>Confirmar código</span>
+        <div class="spin" id="sp2"></div>
+      </button>
+
+      <div class="resend-row" id="resend-row">
+        <span>Reenviar em <strong id="timer-count">60s</strong></span>
+      </div>
+      <div style="text-align:center;margin-top:.5rem;display:none" id="resend-btn-wrap">
+        <button class="btn btn-ghost" onclick="reenviar()">Reenviar código</button>
+      </div>
+
+      <hr class="div">
+      <div style="text-align:center">
+        <button class="btn btn-ghost" onclick="goS1()">← Corrigir dados</button>
+      </div>
+    </div>
+
+    <!-- ── TELA 3: SUCESSO ── -->
+    <div id="s3" class="screen" style="display:none">
+      <div class="success-wrap">
+        <div class="success-ring">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <h2>Cadastro confirmado!</h2>
+        <p>
+          Tudo certo, <span class="name-accent" id="s3-nome"></span>!<br>
+          Seu WhatsApp foi verificado com sucesso.<br>
+          Redirecionando para sua área…
+        </p>
+      </div>
+    </div>
+
+  </div>
+  <div class="card-foot">Seus dados estão protegidos e não serão compartilhados.</div>
+</div>
+
+<!-- cog -->
+<button class="cog-btn" onclick="toggleCfg()" title="Configurações da API">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+</button>
+
+<div class="overlay" id="overlay" onclick="toggleCfg()"></div>
+
+<div class="cfg-drawer" id="cfg-drawer">
+  <div class="cfg-handle"></div>
+  <h3>Configurações da API</h3>
+  <p class="sub">Evolution API — necessário para envio do código via WhatsApp</p>
+
+  <div class="field">
+    <label>URL da Evolution API</label>
+    <div class="input-row">
+      <input type="text" id="c-url" placeholder="https://api.suainstancia.com">
+    </div>
+  </div>
+  <div class="field">
+    <label>API Key (Global)</label>
+    <div class="input-row">
+      <input type="text" id="c-key" placeholder="sua-api-key-aqui">
+    </div>
+  </div>
+  <div class="field">
+    <label>Nome da instância</label>
+    <div class="input-row">
+      <input type="text" id="c-inst" placeholder="minha-instancia">
+    </div>
+  </div>
+  <div class="field">
+    <label>Nome da organização</label>
+    <div class="input-row">
+      <input type="text" id="c-org" placeholder="Ex: Igreja Renovação">
+    </div>
+  </div>
+
+  <button class="cfg-save" onclick="saveCfg()">Salvar configurações</button>
+</div>
+
+<script>
+/* ── STATE ── */
+const _defaults = {url:'https://evolution.osmota.org',key:'1E0C076ACE4B-4974-8450-E622B0129B6F',inst:'ComunidadeSer',org:''};
+let cfg = Object.assign({}, _defaults, JSON.parse(localStorage.getItem('evo_cfg')||'{}'));
+let otp_code = '';
+let cadastro = {};
+let timerID = null;
+
+/* ── INIT ── */
+(function init(){
+  if(cfg.url)  document.getElementById('c-url').value  = cfg.url;
+  if(cfg.key)  document.getElementById('c-key').value  = cfg.key;
+  if(cfg.inst) document.getElementById('c-inst').value = cfg.inst;
+  if(cfg.org)  document.getElementById('c-org').value  = cfg.org;
+
+  // phone mask
+  document.getElementById('f-wpp').addEventListener('input',function(e){
+    let d = e.target.value.replace(/\D/g,'').slice(0,11);
+    if(d.length>7)      d=`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+    else if(d.length>2) d=`(${d.slice(0,2)}) ${d.slice(2)}`;
+    else if(d.length)   d=`(${d}`;
+    e.target.value = d;
+  });
+})();
+
+/* ── CONFIG ── */
+function toggleCfg(){
+  document.getElementById('cfg-drawer').classList.toggle('on');
+  document.getElementById('overlay').classList.toggle('on');
+}
+function saveCfg(){
+  cfg={
+    url:  document.getElementById('c-url').value.trim().replace(/\/$/,''),
+    key:  document.getElementById('c-key').value.trim(),
+    inst: document.getElementById('c-inst').value.trim(),
+    org:  document.getElementById('c-org').value.trim()
+  };
+  localStorage.setItem('evo_cfg',JSON.stringify(cfg));
+  toggleCfg();
+  alert('Configurações salvas!');
+}
+
+/* ── HELPERS ── */
+function digitsOnly(s){ return s.replace(/\D/g,''); }
+function toEvoNumber(wpp){
+  let n = digitsOnly(wpp);
+  if(!n.startsWith('55')) n='55'+n;
+  return n;
+}
+function genCode(){ return String(Math.floor(100000+Math.random()*900000)); }
+function setProgress(p){ document.getElementById('progress').style.width=p+'%'; }
+function setPips(a){
+  ['pip1','pip2','pip3'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.className='step-pip';
+    if(i<a)el.classList.add('done');
+    if(i===a)el.classList.add('active');
+  });
+  document.getElementById('step-lbl').textContent=`Etapa ${a+1} de 3`;
+}
+
+/* ── VALIDATION ── */
+function isEmail(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.trim()); }
+function validNome(n){ const t=n.trim(); return isEmail(t) || (t.split(/\s+/).length>=2 && t.length>=4); }
+function validWpp(w){ return digitsOnly(w).length>=10; }
+
+/* ── STEP 1 → SEND ── */
+async function enviarCodigo(){
+  const nome = document.getElementById('f-nome').value;
+  const wpp  = document.getElementById('f-wpp').value;
+  let ok=true;
+
+  const en=document.getElementById('e-nome');
+  const ew=document.getElementById('e-wpp');
+  const fn=document.getElementById('f-nome');
+  const fw=document.getElementById('f-wpp');
+
+  if(!validNome(nome)){en.classList.add('show');fn.classList.add('has-error');ok=false;}
+  else{en.classList.remove('show');fn.classList.remove('has-error');}
+
+  if(!validWpp(wpp)){ew.classList.add('show');fw.classList.add('has-error');ok=false;}
+  else{ew.classList.remove('show');fw.classList.remove('has-error');}
+
+  if(!ok) return;
+
+  if(!cfg.url||!cfg.key||!cfg.inst){
+    alert('⚙️ Configure a Evolution API primeiro (ícone de engrenagem).');
+    return;
+  }
+
+  const nomeVal = nome.trim();
+  cadastro = isEmail(nomeVal)
+    ? {nome:'', email:nomeVal, wpp:digitsOnly(wpp)}
+    : {nome:nomeVal, email:'', wpp:digitsOnly(wpp)};
+  otp_code = genCode();
+
+  const btn=document.getElementById('btn-enviar');
+  const sp =document.getElementById('sp1');
+  const btxt=document.getElementById('btn-txt');
+  btn.disabled=true; sp.style.display='block';
+  btxt.textContent='Enviando…';
+
+  const org = cfg.org||'nossa organização';
+  const msg = `Olá, ${cadastro.nome.split(' ')[0]}! 👋\n\nSeu código de verificação para o cadastro em *${org}* é:\n\n🔐 *${otp_code}*\n\nCódigo válido por 5 minutos. Não compartilhe com ninguém.`;
+
+  try{
+    const r=await fetch(`${cfg.url}/message/sendText/${cfg.inst}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':cfg.key},
+      body:JSON.stringify({number:toEvoNumber(wpp), text:msg})
+    });
+    if(!r.ok){ const t=await r.text(); throw new Error(`HTTP ${r.status}: ${t}`); }
+    goS2();
+  }catch(err){
+    console.error(err);
+    alert(`Erro ao enviar o código:\n\n${err.message}\n\nVerifique se a instância está conectada e as configurações estão corretas.`);
+  }finally{
+    btn.disabled=false; sp.style.display='none';
+    btxt.textContent='Autenticar via WhatsApp';
+  }
+}
+
+/* ── NAV ── */
+function goS2(){
+  document.getElementById('s1').style.display='none';
+  document.getElementById('s2').style.display='block';
+  document.querySelector('#pill-wpp span').textContent=document.getElementById('f-wpp').value;
+  setProgress(66);setPips(1);
+  document.getElementById('card-title').textContent='Verificação';
+  document.getElementById('card-sub').textContent='Digite o código enviado ao seu WhatsApp';
+  startTimer();
+  document.querySelector('.otp').focus();
+}
+function goS1(){
+  clearInterval(timerID);
+  document.getElementById('s2').style.display='none';
+  document.getElementById('s1').style.display='block';
+  setProgress(33);setPips(0);
+  document.getElementById('card-title').textContent='Cadastro / Login';
+  document.getElementById('card-sub').textContent='Cadastre-se ou acesse sua área';
+  resetOTP();
+}
+function goS3(){
+  clearInterval(timerID);
+  document.getElementById('s2').style.display='none';
+  document.getElementById('s3').style.display='block';
+  setProgress(100);setPips(2);
+  document.getElementById('card-title').textContent='Confirmado!';
+  document.getElementById('card-sub').textContent='';
+  document.getElementById('s3-nome').textContent=cadastro.nome ? cadastro.nome.split(' ')[0] : cadastro.email;
+  salvar();
+}
+
+/* ── OTP ── */
+function getOTPs(){ return Array.from(document.querySelectorAll('.otp')); }
+function resetOTP(){
+  getOTPs().forEach(i=>{i.value='';i.classList.remove('has-error');});
+  document.getElementById('e-otp').style.visibility='hidden';
+}
+function oIn(el,idx){
+  const v=el.value.replace(/\D/g,'');
+  el.value=v.slice(0,1);
+  const all=getOTPs();
+  if(v&&idx<5) all[idx+1].focus();
+}
+function oKey(e,el,idx){
+  const all=getOTPs();
+  if(e.key==='Backspace'&&!el.value&&idx>0) all[idx-1].focus();
+  if(e.key==='Enter') verificar();
+}
+function oPaste(e){
+  e.preventDefault();
+  const txt=(e.clipboardData||window.clipboardData).getData('text');
+  const digits=txt.replace(/\D/g,'').slice(0,6);
+  const all=getOTPs();
+  digits.split('').forEach((d,i)=>{ if(all[i]) all[i].value=d; });
+  if(digits.length===6) verificar();
+}
+
+function verificar(){
+  const code=getOTPs().map(i=>i.value).join('');
+  const errEl=document.getElementById('e-otp');
+  if(code.length<6){
+    errEl.textContent='Preencha todos os 6 dígitos.';
+    errEl.style.visibility='visible';
+    return;
+  }
+  if(code!==otp_code){
+    errEl.textContent='Código incorreto. Verifique e tente novamente.';
+    errEl.style.visibility='visible';
+    getOTPs().forEach(i=>i.classList.add('has-error'));
+    setTimeout(()=>getOTPs().forEach(i=>i.classList.remove('has-error')),600);
+    return;
+  }
+  errEl.style.visibility='hidden';
+  goS3();
+}
+
+/* ── TIMER ── */
+function startTimer(){
+  let s=60;
+  document.getElementById('resend-row').style.display='block';
+  document.getElementById('resend-btn-wrap').style.display='none';
+  clearInterval(timerID);
+  timerID=setInterval(()=>{
+    s--;
+    document.getElementById('timer-count').textContent=s+'s';
+    if(s<=0){
+      clearInterval(timerID);
+      document.getElementById('resend-row').style.display='none';
+      document.getElementById('resend-btn-wrap').style.display='block';
+    }
+  },1000);
+}
+
+async function reenviar(){
+  otp_code=genCode();
+  const org=cfg.org||'nossa organização';
+  const msg=`Seu novo código de verificação para *${org}*:\n\n🔐 *${otp_code}*\n\nVálido por 5 minutos.`;
+  try{
+    await fetch(`${cfg.url}/message/sendText/${cfg.inst}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':cfg.key},
+      body:JSON.stringify({number:'55'+cadastro.wpp, text:msg})
+    });
+    resetOTP();
+    startTimer();
+    document.querySelector('.otp').focus();
+  }catch(e){
+    alert('Erro ao reenviar. Verifique a conexão com a API.');
+  }
+}
+
+/* ── SAVE & RESET ── */
+async function salvar(){
+  // salva localmente (fallback)
+  const list=JSON.parse(localStorage.getItem('cadastros')||'[]');
+  list.push({...cadastro, at:new Date().toISOString()});
+  localStorage.setItem('cadastros',JSON.stringify(list));
+  // envia ao servidor e redireciona para área do usuário
+  try{
+    await fetch('save.php',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(cadastro)
+    });
+  }catch(e){}
+  setTimeout(()=>{ window.location.href='area.php'; },1500);
+}
+
+function reset(){
+  document.getElementById('s3').style.display='none';
+  document.getElementById('s1').style.display='block';
+  document.getElementById('f-nome').value='';
+  document.getElementById('f-wpp').value='';
+  otp_code=''; cadastro={};
+  setProgress(33);setPips(0);
+  document.getElementById('card-title').textContent='Cadastre-se';
+  document.getElementById('card-sub').textContent='Preencha seus dados para se inscrever';
+  resetOTP();
+}
+</script>
+</body>
+</html>

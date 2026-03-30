@@ -1,0 +1,360 @@
+/* ═══════════════════════════════════════════════════════════════
+   COMUNIDADE SER — Design System Global
+   Fonte da verdade para todos os sistemas internos.
+   Inclua com: <link rel="stylesheet" href="/assets/ser.css">
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Fontes — carregadas aqui para garantir consistência em todos os sistemas */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Outfit:wght@300;400;500;600&display=swap');
+
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ── VARIÁVEIS ── */
+:root{
+  --bg:#0A0F1E;
+  --surface:#111827;
+  --surface2:#1A2235;
+  --surface3:#1E2A3A;
+  --border:rgba(255,255,255,0.08);
+  --border-active:rgba(255,255,255,0.22);
+  --text:#F0EDE8;
+  --text-muted:rgba(240,237,232,0.45);
+  --text-dim:rgba(240,237,232,0.65);
+  --gold:#C9A84C;
+  --gold-light:#E8C97A;
+  --gold-glow:rgba(201,168,76,0.15);
+  --green:#2ECC71;
+  --green-glow:rgba(46,204,113,0.15);
+  --red:#E74C3C;
+  --blue:#2471A3;
+  --radius:16px;
+  --radius-sm:10px;
+  --radius-lg:24px;
+  --transition:0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ── MODO CLARO ── */
+body.light-mode{
+  --bg:#F8F9FA;
+  --surface:#FFFFFF;
+  --surface2:#F1F3F5;
+  --surface3:#E8EAED;
+  --border:rgba(0,0,0,0.08);
+  --border-active:rgba(0,0,0,0.15);
+  --text:#1A1D23;
+  --text-muted:rgba(0,0,0,0.5);
+  --text-dim:rgba(0,0,0,0.7);
+  --gold:#B38F36;
+  --gold-light:#C9A84C;
+  --gold-glow:rgba(179,143,54,0.1);
+}
+body.light-mode .logo-img{filter:invert(1) brightness(0.2)}
+
+/* ── BASE ── */
+html,body{overflow-x:hidden}
+body{
+  font-family:'Outfit',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  transition:background var(--transition),color var(--transition);
+}
+
+/* Gradiente atmosférico */
+body::before{
+  content:'';
+  position:fixed;
+  top:-30%;left:-20%;
+  width:60%;height:80%;
+  background:radial-gradient(ellipse,var(--gold-glow) 0%,transparent 70%);
+  pointer-events:none;
+  z-index:0;
+}
+body::after{
+  content:'';
+  position:fixed;
+  bottom:-20%;right:-10%;
+  width:50%;height:60%;
+  background:radial-gradient(ellipse,rgba(46,204,113,0.04) 0%,transparent 70%);
+  pointer-events:none;
+  z-index:0;
+}
+
+/* ── ANIMAÇÃO PADRÃO ── */
+@keyframes riseIn{
+  from{opacity:0;transform:translateY(24px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes fadeIn{
+  from{opacity:0}
+  to{opacity:1}
+}
+
+/* ── TIPOGRAFIA ── */
+a{color:var(--gold);text-decoration:none}
+h1,h2,h3{font-weight:600;line-height:1.2}
+.font-serif{font-family:'Playfair Display',serif}
+
+/* ── PASSWORD GATE ── */
+#password-gate{
+  position:fixed;inset:0;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  z-index:99999;
+}
+#password-gate.hidden{display:none}
+#password-box{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:40px 36px;
+  width:100%;max-width:360px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  text-align:center;
+  position:relative;z-index:1;
+  animation:riseIn .5s cubic-bezier(.22,1,.36,1) both;
+}
+#password-box .logo{
+  font-family:'Playfair Display',serif;
+  font-size:1.5rem;font-weight:700;
+  color:var(--gold-light);
+  margin-bottom:6px;
+}
+#password-box .sub{
+  font-size:.85rem;
+  color:var(--text-muted);
+  margin-bottom:28px;
+}
+#password-box input{
+  width:100%;
+  padding:11px 14px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  font-size:1rem;outline:none;
+  transition:border-color .2s,box-shadow .2s;
+  margin-bottom:14px;
+  background:var(--surface2);
+  color:var(--text);
+  font-family:'Outfit',sans-serif;
+}
+#password-box input::placeholder{color:var(--text-muted)}
+#password-box input:focus{
+  border-color:rgba(201,168,76,0.5);
+  box-shadow:0 0 0 3px var(--gold-glow);
+}
+#password-box button{
+  width:100%;padding:12px;
+  background:linear-gradient(135deg,var(--gold),var(--gold-light));
+  color:#0A0F1E;
+  border:none;border-radius:10px;
+  font-size:1rem;font-weight:600;cursor:pointer;
+  transition:opacity .2s;
+  font-family:'Outfit',sans-serif;
+}
+#password-box button:hover{opacity:.88}
+#password-error{
+  color:var(--red);
+  font-size:.83rem;
+  margin-top:8px;
+  min-height:18px;
+}
+
+/* ── LOGIN CARD ── */
+.login-wrap{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:2rem 1rem;
+}
+.login-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:2.5rem 2rem;
+  width:100%;max-width:360px;
+  position:relative;z-index:1;
+  animation:riseIn .5s cubic-bezier(.22,1,.36,1) both;
+}
+.login-card h1{font-size:1.35rem;margin-bottom:.3rem}
+.login-card p{color:var(--text-dim);font-size:.88rem;margin-bottom:1.5rem}
+.login-card label{display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.4rem}
+
+/* ── INPUTS GLOBAIS ── */
+input,select,textarea{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:.7rem 1rem;
+  color:var(--text);
+  font-size:.9rem;
+  font-family:'Outfit',sans-serif;
+  outline:none;
+  transition:border-color .2s,box-shadow .2s;
+  width:100%;
+}
+input::placeholder,textarea::placeholder{color:var(--text-muted)}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--gold);
+  box-shadow:0 0 0 3px var(--gold-glow);
+}
+
+/* ── BOTÕES ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  padding:.55rem 1.1rem;
+  border-radius:9px;
+  font-size:.88rem;font-weight:500;
+  cursor:pointer;font-family:'Outfit',sans-serif;
+  border:none;
+  transition:opacity .15s,transform .15s;
+  white-space:nowrap;
+  text-decoration:none;
+}
+.btn:hover{opacity:.82}
+.btn:active{transform:scale(.97)}
+
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#0A0F1E;font-weight:600}
+.btn-green{background:var(--green);color:#0A0F1E;font-weight:600}
+.btn-red{background:var(--red);color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-outline{
+  background:transparent;
+  border:1px solid var(--border-active);
+  color:var(--text-dim);
+}
+.btn-outline:hover{border-color:var(--gold);color:var(--text)}
+.btn-sm{padding:.3rem .7rem;font-size:.8rem}
+.btn-xs{padding:.18rem .45rem;font-size:.72rem;border-radius:20px}
+.btn-lg{padding:.8rem 1.5rem;font-size:1rem}
+
+/* ── CARDS ── */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  position:relative;z-index:1;
+}
+.card-anim{animation:riseIn .5s cubic-bezier(.22,1,.36,1) both}
+
+/* ── BADGES ── */
+.badge{
+  display:inline-flex;align-items:center;gap:.35rem;
+  font-size:.75rem;border-radius:20px;
+  padding:.3rem .75rem;font-weight:500;
+}
+.badge-gold{background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);color:var(--gold)}
+.badge-green{background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.25);color:var(--green)}
+.badge-red{background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.25);color:var(--red)}
+.badge-blue{background:rgba(36,113,163,0.15);border:1px solid rgba(36,113,163,0.3);color:#5dade2}
+.badge-muted{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim)}
+
+/* ── DIVISOR ── */
+.divider{height:1px;background:var(--border);margin:1rem 0}
+
+/* ── STATS ── */
+.stats{display:flex;gap:.75rem;flex-wrap:wrap}
+.stat{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:.9rem 1.2rem;
+  flex:1;min-width:120px;
+}
+.stat-val{font-size:1.75rem;font-weight:600;color:var(--gold);line-height:1.1}
+.stat-lbl{font-size:.76rem;color:var(--text-muted);margin-top:.25rem}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1.25rem;flex-wrap:wrap;gap:.875rem;
+}
+.topbar h1{font-size:1.35rem;font-weight:600;letter-spacing:-.015em}
+.topbar-actions{display:flex;gap:.6rem;align-items:center}
+
+/* ── TABS ── */
+.tabs{
+  display:flex;gap:.2rem;
+  border-bottom:1px solid var(--border);
+  margin-bottom:1.25rem;
+}
+.tab-btn{
+  padding:.5rem 1.1rem;
+  background:none;border:none;
+  border-bottom:2px solid transparent;
+  color:var(--text-dim);
+  font-family:inherit;font-size:.88rem;font-weight:500;
+  cursor:pointer;margin-bottom:-1px;
+  transition:all .18s;
+}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-btn:hover:not(.active){color:var(--text)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── TABELA ── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+thead{background:var(--surface2)}
+th{
+  padding:.7rem 1rem;
+  text-align:left;
+  font-size:.72rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:.06em;
+  color:var(--text-muted);
+  border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+td{
+  padding:.75rem 1rem;
+  border-bottom:1px solid var(--border);
+  color:var(--text-dim);
+  vertical-align:middle;
+}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+
+/* ── MENSAGENS ── */
+.msg-err{
+  font-size:.85rem;color:var(--red);
+  padding:.6rem 1rem;
+  background:rgba(231,76,60,0.08);
+  border:1px solid rgba(231,76,60,0.2);
+  border-radius:8px;
+}
+.msg-ok{
+  font-size:.85rem;color:var(--green);
+  padding:.6rem 1rem;
+  background:rgba(46,204,113,0.08);
+  border:1px solid rgba(46,204,113,0.2);
+  border-radius:8px;
+}
+.msg-warn{
+  font-size:.85rem;color:var(--gold);
+  padding:.6rem 1rem;
+  background:rgba(201,168,76,0.08);
+  border:1px solid rgba(201,168,76,0.2);
+  border-radius:8px;
+}
+
+/* ── TEMA TOGGLE ── */
+.theme-toggle{
+  background:var(--surface);
+  border:1px solid var(--border);
+  color:var(--gold);
+  width:42px;height:42px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:all var(--transition);
+}
+.theme-toggle:hover{transform:scale(1.1);border-color:var(--gold)}
+.theme-toggle svg{width:20px;height:20px}
+
+/* ── RESPONSIVO ── */
+@media(max-width:640px){
+  .stats{gap:.5rem}
+  .stat-val{font-size:1.4rem}
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tab-btn{white-space:nowrap}
+  th,td{padding:.55rem .75rem}
+}

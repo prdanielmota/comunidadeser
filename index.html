@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comunidade SER — Fé, Esperança e Amor</title>
+    <meta name="description" content="Uma comunidade de fé, esperança e amor em Manaus. Igreja Adventista do Sétimo Dia — Av. Guilherme Paraense, 712, Adrianópolis.">
+
+    <!-- Open Graph / WhatsApp preview -->
+    <meta property="og:type"        content="website">
+    <meta property="og:url"         content="https://comunidadeser.com/">
+    <meta property="og:site_name"   content="Comunidade SER">
+    <meta property="og:title"       content="Comunidade SER — Fé, Esperança e Amor">
+    <meta property="og:description" content="Uma comunidade de fé, esperança e amor em Manaus. Igreja Adventista do Sétimo Dia.">
+    <meta property="og:image"       content="https://comunidadeser.com/assets/og-preview.png">
+    <meta property="og:image:width"  content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt"    content="Comunidade SER — Fé, Esperança e Amor">
+    <meta property="og:locale"      content="pt_BR">
+
+    <!-- Conexões antecipadas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://comunidadeser.com">
+
+    <!-- ser.css: preload garante que começa a baixar cedo -->
+    <link rel="preload" href="/assets/ser.css" as="style">
+    <link rel="stylesheet" href="/assets/ser.css">
+
+    <!-- Fontes: carregamento não-bloqueante -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Outfit:wght@300;400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Outfit:wght@300;400;500;600&display=swap"></noscript>
+
+    <!-- Anti-FOUC: aplica tema ANTES da primeira renderização -->
+    <script>
+    (function(){
+        if(localStorage.getItem('theme')==='light'){
+            var s=document.createElement('style');
+            s.id='fouc-fix';
+            s.textContent='body{--bg:#F8F9FA;--surface:#fff;--surface2:#F1F3F5;--border:rgba(0,0,0,0.08);--border-active:rgba(0,0,0,0.15);--text:#1A1D23;--text-muted:rgba(0,0,0,0.5);--text-dim:rgba(0,0,0,0.7);--gold:#B38F36;--gold-light:#C9A84C;--gold-glow:rgba(179,143,54,0.1);}.logo-img{filter:invert(1) brightness(0.2)}';
+            document.head.appendChild(s);
+        }
+    })();
+    </script>
+
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4rem 1.5rem;
+            position: relative;
+        }
+        .container {
+            width: 100%;
+            max-width: 520px;
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+        .theme-toggle { position: absolute; top: -2rem; right: 0; }
+        .header { margin-bottom: 3rem; }
+        .logo-img { max-width: 220px; margin-bottom: 1.5rem; }
+        h1 {
+            position: absolute; width: 1px; height: 1px;
+            padding: 0; margin: -1px; overflow: hidden;
+            clip: rect(0,0,0,0); white-space: nowrap; border-width: 0;
+        }
+        .tagline { color: var(--text-muted); font-weight: 300; font-size: 1rem; margin-bottom: 2rem; }
+        .tagline span { color: var(--gold-light); font-weight: 600; }
+        .links-principais { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 4rem; }
+        .btn-link {
+            display: flex; align-items: center; justify-content: center;
+            padding: 1.1rem 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500; font-size: 1rem;
+            transition: all var(--transition);
+            position: relative; overflow: hidden;
+        }
+        .btn-link:hover { background: var(--surface2); border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .btn-link.featured {
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            color: #0A0F1E; border: none; font-weight: 700;
+        }
+        .btn-link.featured:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 15px 30px var(--gold-glow); }
+        footer { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-muted); line-height: 1.6; }
+        .social-row { display: flex; justify-content: center; gap: 1.5rem; margin-top: 1.5rem; }
+        .social-row a { color: var(--text-dim); text-decoration: none; transition: color 0.3s; }
+        .social-row a:hover { color: var(--gold); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <button class="theme-toggle" id="theme-btn" title="Alternar Tema" aria-label="Alternar Tema">
+            <svg id="sun-icon" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg id="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+
+        <header class="header">
+            <!-- Dimensões explícitas evitam layout shift (CLS) -->
+            <img src="https://comunidadeser.com/wp-content/uploads/2025/01/logo_ser_branca-1-300x197.png"
+                 alt="Comunidade SER" class="logo-img" id="logo-main"
+                 width="220" height="145" fetchpriority="high">
+            <h1>Comunidade SER</h1>
+            <!-- Conteúdo padrão PT visível imediatamente; JS sobrescreve se necessário -->
+            <p class="tagline" id="tagline-el">Uma comunidade de <span>fé</span>, <span>esperança</span> e <span>amor</span> em Manaus.</p>
+        </header>
+
+        <div class="links-principais">
+            <a href="https://giving.7me.app/guest-donation/church/b02761a4-d529-4071-951c-c23e42a53c55"
+               target="_blank" rel="noopener noreferrer"
+               class="btn-link featured" id="btn-offer">
+                Ofertar / Dizimar
+            </a>
+            <a href="/amigos/" class="btn-link" id="btn-join">
+                Quero fazer parte da Comunidade
+            </a>
+            <a href="/app" class="btn-link" id="btn-member">
+                Área do Membro
+            </a>
+        </div>
+
+        <footer>
+            <p id="footer-church">Igreja Adventista do Sétimo Dia — Comunidade SER</p>
+            <p id="footer-addr">Av. Guilherme Paraense, 712 - Adrianópolis, Manaus-AM</p>
+            <div class="social-row">
+                <a href="https://www.instagram.com/comunidadeser/" target="_blank" rel="noopener noreferrer">Instagram</a>
+                <a href="https://www.youtube.com/@Comunidade_Ser" target="_blank" rel="noopener noreferrer">YouTube</a>
+            </div>
+            <p style="margin-top:2rem;opacity:.5;font-size:.7rem">&copy; 2026 Comunidade SER</p>
+        </footer>
+    </div>
+
+    <script>
+    (function(){
+        /* ── TEMA ── */
+        const body = document.body;
+        const themeBtn = document.getElementById('theme-btn');
+        const sunIcon  = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
+        const isLight  = localStorage.getItem('theme') === 'light';
+
+        if(isLight){ body.classList.add('light-mode'); }
+        sunIcon.style.display  = isLight ? 'block' : 'none';
+        moonIcon.style.display = isLight ? 'none'  : 'block';
+
+        themeBtn.addEventListener('click', function(){
+            const light = body.classList.toggle('light-mode');
+            localStorage.setItem('theme', light ? 'light' : 'dark');
+            sunIcon.style.display  = light ? 'block' : 'none';
+            moonIcon.style.display = light ? 'none'  : 'block';
+            // Remove o fix de FOUC (não é mais necessário após interação)
+            var fix = document.getElementById('fouc-fix');
+            if(fix) fix.remove();
+        });
+
+        /* ── TRADUÇÕES ── */
+        const T = {
+            pt:{ tagline:'Uma comunidade de <span>fé</span>, <span>esperança</span> e <span>amor</span> em Manaus.', offer:'Ofertar / Dizimar', join:'Quero fazer parte da Comunidade', member:'Área do Membro', church:'Igreja Adventista do Sétimo Dia — Comunidade SER', addr:'Av. Guilherme Paraense, 712 - Adrianópolis, Manaus-AM' },
+            en:{ tagline:'A community of <span>faith</span>, <span>hope</span>, and <span>love</span> in Manaus.', offer:'Offer / Tithe', join:'Join our Community', member:'Member Area', church:'Seventh-day Adventist Church — SER Community', addr:'712 Guilherme Paraense Ave - Manaus, Brazil' },
+            ja:{ tagline:'マナウスにある<span>信仰</span>、<span>希望</span>、<span>愛</span>のコミュニティ。', offer:'献金 / 十一献金', join:'コミュニティに参加する', member:'メンバーエリア', church:'セブンスデー・アドベンチスト教会 — SERコミュニティ', addr:'マナウス、ギリェルメ・パラエンセ通り712番地' },
+            zh:{ tagline:'马瑙斯的一个充满<span>信仰</span>、<span>希望</span>和<span>爱</span>的社区。', offer:'奉献 / 什一奉献', join:'加入我们的社区', member:'成员区域', church:'基督复临安息日会 — SER 社区', addr:'马瑙斯，吉列尔梅·帕拉恩塞大道 712 号' }
+        };
+
+        function applyLang(lang){
+            const d = T[lang] || T.pt;
+            document.getElementById('tagline-el').innerHTML  = d.tagline;
+            document.getElementById('btn-offer').textContent  = d.offer;
+            document.getElementById('btn-join').textContent   = d.join;
+            document.getElementById('btn-member').textContent = d.member;
+            document.getElementById('footer-church').textContent = d.church;
+            document.getElementById('footer-addr').textContent   = d.addr;
+        }
+
+        /* ── IDIOMA: navigator.language primeiro (sem fetch desnecessário) ── */
+        const saved = localStorage.getItem('pref-lang');
+        if(saved && T[saved]){
+            applyLang(saved);
+        } else {
+            const browserLang = (navigator.language || 'pt').split('-')[0];
+            if(T[browserLang] && browserLang !== 'pt'){
+                // PT já está no HTML; só atualiza se for outro idioma suportado
+                applyLang(browserLang);
+            } else if(!T[browserLang]){
+                // Idioma desconhecido: tenta GeoIP apenas neste caso
+                fetch('https://ipapi.co/json/').then(r=>r.json()).then(function(d){
+                    var map={'JP':'ja','CN':'zh','HK':'zh','TW':'zh'};
+                    var l=map[d.country_code];
+                    if(l) applyLang(l);
+                }).catch(function(){});
+            }
+        }
+    })();
+    </script>
+</body>
+</html>

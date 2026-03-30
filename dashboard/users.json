@@ -1,0 +1,12 @@
+[
+    {
+        "id": "1",
+        "nome": "Super Admin",
+        "usuario": "admin",
+        "senha": "$2y$10$fSC1aX8CGmDuoxUhz7XgDOPd/FXICDyYOAs1tAWqnWrvqLuVLv1Qq",
+        "role": "superadmin",
+        "sistemas": ["app", "amigos", "zap", "site"],
+        "ativo": true,
+        "criado_em": "2026-03-30T10:00:00"
+    }
+]

@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(crontab -l)",
+      "Bash(echo \"0 8 * * * php /home/u566113111/domains/comunidadeser.com/public_html/app/aniversario.php >> /home/u566113111/domains/comunidadeser.com/public_html/app/.logs/aniversario.log 2>&1\")",
+      "Bash(crontab -)",
+      "Bash(php --version)",
+      "Bash(php:*)",
+      "Read(//usr/local/lsws/**)",
+      "Read(//opt/alt/**)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(ls /home/u566113111/domains/comunidadeser.com/public_html/app/*.html /home/u566113111/domains/comunidadeser.com/public_html/zap/*.html /home/u566113111/domains/comunidadeser.com/public_html/zap/*.php)",
+      "Bash(head -5 echo \"---\" grep -n \"system-ui\\\\|#1e3a8a\\\\|#0f172a\" /home/u566113111/domains/comunidadeser.com/public_html/app/index.html)",
+      "Bash(head -5 echo \"---\" grep -n \"system-ui\\\\|#1e3a8a\\\\|#0f172a\" /home/u566113111/domains/comunidadeser.com/public_html/app/admin.html)",
+      "Bash(sed -i 's/color:#718096/color:rgba\\(240,237,232,0.45\\)/g' /home/u566113111/domains/comunidadeser.com/public_html/zap/index.html)",
+      "Bash(__NEW_LINE_2a8b5e064dadaa07__ sed:*)",
+      "Bash(find /home/u566113111/domains/comunidadeser.com/public_html -name *.css -o -name style* -o -name global* -o -name theme*)",
+      "Bash(identify /home/u566113111/domains/comunidadeser.com/public_html/wp-content/uploads/2025/01/logo_ser_branca-1.png)",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(sed -i '/<link[^>]*fonts\\\\.googleapis[^>]*>/d' \"$f\")",
+      "Bash(sed -i '/<link[^>]*fonts\\\\.gstatic[^>]*>/d' \"$f\")",
+      "Bash(sed -i '/rel=\"\"preconnect\"\"[^>]*googleapis/d' \"$f\")",
+      "Bash(npm -v)",
+      "Bash(ls -la /home/u566113111/domains/comunidadeser.com/public_html/*.json)",
+      "Bash(grep -l \"fetch\\\\|async\\\\|POST\\\\|GET\" /home/u566113111/domains/comunidadeser.com/public_html/app/*.html)",
+      "Bash(head -10 grep -n \"var KEY\\\\|sessionStorage\\\\|password\\\\|PASS\\\\b\" /home/u566113111/domains/comunidadeser.com/public_html/amigos/dashboard.php)",
+      "Bash(find /home/u566113111/domains/comunidadeser.com/public_html -name error_log -o -name *.log)",
+      "Bash(git init:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(git rm:*)"
+    ]
+  }
+}

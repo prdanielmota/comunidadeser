@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Filtros — Listagem Completa</title>
+<link rel="stylesheet" href="/assets/ser.css">
+<script>
+(function(){
+  var KEY='cs_auth';
+  function check(){
+    if(sessionStorage.getItem(KEY)==='1'){document.getElementById('password-gate').classList.add('hidden');}
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    check();
+    document.getElementById('pw-form').addEventListener('submit',function(e){
+      e.preventDefault();
+      var val=document.getElementById('pw-input').value;
+      if(val==='ComunidadeSer@2026'){
+        sessionStorage.setItem(KEY,'1');
+        document.getElementById('password-gate').classList.add('hidden');
+      } else {
+        document.getElementById('password-error').textContent='Senha incorreta. Tente novamente.';
+        document.getElementById('pw-input').value='';
+        document.getElementById('pw-input').focus();
+      }
+    });
+  });
+})();
+</script>
+<style>
+/* ── Header ── */
+.header{background:#111827;border-bottom:1px solid rgba(201,168,76,0.2);color:#F0EDE8;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 16px rgba(0,0,0,.5);position:relative;z-index:1}
+.header h1{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:#F0EDE8}
+.header .sub{font-size:.82rem;color:rgba(240,237,232,0.45);margin-top:3px}
+.badge{background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);border-radius:20px;padding:5px 14px;font-size:.82rem;color:#E8C97A}
+
+.layout{display:flex;min-height:calc(100vh - 72px);position:relative;z-index:1}
+
+/* ── Sidebar ── */
+.sidebar{width:280px;min-width:280px;background:#111827;border-right:1px solid rgba(255,255,255,0.06);padding:18px;overflow-y:auto}
+.sb-title{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(240,237,232,0.4);margin-bottom:14px}
+.fs{margin-bottom:20px}
+.fl{font-size:.78rem;font-weight:500;color:rgba(240,237,232,0.6);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+select,input[type=text],input[type=number],input[type=date]{
+  width:100%;padding:7px 11px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;
+  font-size:.83rem;background:#1A2235;color:#F0EDE8;outline:none;transition:border-color .2s,box-shadow .2s;font-family:'Outfit',sans-serif
+}
+select{cursor:pointer}
+select option{background:#1A2235;color:#F0EDE8}
+select:focus,input:focus{border-color:rgba(201,168,76,0.5);box-shadow:0 0 0 3px rgba(201,168,76,0.15)}
+.age-row{display:flex;gap:6px;align-items:center}
+.age-row input{width:72px;text-align:center}
+.age-row span{color:rgba(240,237,232,0.4);font-size:.78rem}
+.date-row{display:flex;flex-direction:column;gap:6px}
+.date-row span{color:rgba(240,237,232,0.4);font-size:.76rem}
+
+.radio-g{display:flex;gap:5px;flex-wrap:wrap}
+.rb{flex:1;min-width:60px;padding:6px 8px;border:1px solid rgba(255,255,255,0.08);border-radius:7px;font-size:.75rem;text-align:center;cursor:pointer;transition:all .15s;color:rgba(240,237,232,0.5);user-select:none}
+.rb:hover{border-color:rgba(201,168,76,0.35);color:#C9A84C}
+.rb.on{background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.4);color:#E8C97A;font-weight:600}
+.rb.on-vip{background:rgba(201,168,76,0.15);border-color:#C9A84C;color:#E8C97A;font-weight:600}
+
+.btn-reset{width:100%;padding:9px;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.2);border-radius:8px;color:#E74C3C;font-size:.82rem;font-weight:600;cursor:pointer;margin-top:6px;transition:background .2s;font-family:'Outfit',sans-serif}
+.btn-reset:hover{background:rgba(231,76,60,0.18)}
+.divider{height:1px;background:rgba(255,255,255,0.07);margin:14px 0}
+
+/* ── Main ── */
+.main{flex:1;padding:20px;overflow:auto}
+
+.stats{background:#111827;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sc{font-size:1.2rem;font-weight:700;color:#C9A84C}
+.sl{font-size:.75rem;color:rgba(240,237,232,0.4);margin-top:2px}
+.sd{display:flex;gap:18px}
+.si-n{font-size:.95rem;font-weight:600;color:#F0EDE8;text-align:center}
+.si-l{font-size:.68rem;color:rgba(240,237,232,0.4);text-align:center}
+.btn-exp{padding:7px 16px;background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.25);border-radius:7px;color:#2ECC71;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Outfit',sans-serif}
+.btn-exp:hover{background:rgba(46,204,113,0.22)}
+
+.af{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;min-height:0}
+.afc{background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.22);color:#E8C97A;border-radius:20px;padding:3px 11px;font-size:.73rem;font-weight:500}
+
+.search-wrap{position:relative;margin-bottom:14px}
+.search-wrap input{width:100%;padding:10px 14px 10px 38px;border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:.87rem;background:#111827;outline:none;color:#F0EDE8}
+.search-wrap input:focus{border-color:rgba(201,168,76,0.5);box-shadow:0 0 0 3px rgba(201,168,76,0.12)}
+.si{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:rgba(240,237,232,0.3)}
+
+.tw{background:#111827;border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+thead tr{background:#1A2235;border-bottom:1px solid rgba(201,168,76,0.18)}
+th{padding:11px 12px;text-align:left;font-weight:600;font-size:.75rem;letter-spacing:.3px;white-space:nowrap;cursor:pointer;user-select:none;color:rgba(240,237,232,0.55)}
+th:hover{color:#C9A84C}
+tbody tr{border-bottom:1px solid rgba(255,255,255,0.04);transition:background .1s}
+tbody tr:hover{background:#1A2235}
+td{padding:9px 12px;vertical-align:middle;color:#F0EDE8}
+
+.bv{background:rgba(201,168,76,0.14);border:1px solid rgba(201,168,76,0.28);color:#E8C97A;border-radius:20px;padding:2px 9px;font-size:.68rem;font-weight:600}
+.bf{background:rgba(231,76,120,0.12);color:#f8a0b8;border-radius:20px;padding:2px 9px;font-size:.68rem}
+.bm{background:rgba(46,100,220,0.14);color:#90b8f8;border-radius:20px;padding:2px 9px;font-size:.68rem}
+.bn{background:rgba(255,255,255,0.06);color:rgba(240,237,232,0.4);border-radius:20px;padding:2px 9px;font-size:.68rem}
+.mc{display:inline-block;background:rgba(153,90,220,0.14);color:#c8a0f8;border-radius:4px;padding:2px 6px;font-size:.66rem;margin:1px}
+
+/* ── Modal Disparo ── */
+#disp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+#disp-overlay.hidden{display:none}
+#disp-box{background:#111827;border:1px solid rgba(255,255,255,0.1);border-radius:16px;width:100%;max-width:560px;box-shadow:0 24px 64px rgba(0,0,0,.6);overflow:hidden;display:flex;flex-direction:column;max-height:90vh}
+#disp-head{background:#1A2235;border-bottom:1px solid rgba(201,168,76,0.18);color:#F0EDE8;padding:18px 22px;display:flex;align-items:center;justify-content:space-between}
+#disp-head h2{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:#E8C97A}
+#disp-close{background:none;border:none;color:rgba(240,237,232,0.45);font-size:1.3rem;cursor:pointer;padding:2px 6px;border-radius:6px;transition:color .2s}
+#disp-close:hover{color:#F0EDE8}
+#disp-body{padding:20px 22px;overflow-y:auto;flex:1;background:#111827}
+.disp-row{margin-bottom:14px}
+.disp-label{font-size:.78rem;font-weight:500;color:rgba(240,237,232,0.6);margin-bottom:6px;display:block}
+.disp-tabs{display:flex;gap:6px;margin-bottom:14px}
+.disp-tab{flex:1;padding:8px;border:1px solid rgba(255,255,255,0.07);border-radius:8px;background:#1A2235;font-size:.8rem;font-weight:600;cursor:pointer;color:rgba(240,237,232,0.5);transition:all .15s;text-align:center;font-family:'Outfit',sans-serif}
+.disp-tab.on{border-color:rgba(201,168,76,0.4);background:rgba(201,168,76,0.1);color:#E8C97A}
+#disp-subject,#disp-msg{width:100%;border:1px solid rgba(255,255,255,0.07);border-radius:8px;font-size:.85rem;padding:9px 12px;outline:none;font-family:'Outfit',sans-serif;color:#F0EDE8;background:#1A2235;resize:vertical}
+#disp-subject:focus,#disp-msg:focus{border-color:rgba(201,168,76,0.5);box-shadow:0 0 0 3px rgba(201,168,76,0.12)}
+#disp-msg{min-height:110px}
+#disp-preview{background:#0A0F1E;border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:10px 14px;font-size:.78rem;color:rgba(240,237,232,0.6);margin-bottom:14px;line-height:1.6}
+#disp-preview b{color:#C9A84C}
+#disp-send{width:100%;padding:12px;background:linear-gradient(135deg,#C9A84C,#E8C97A);color:#0A0F1E;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:opacity .2s;font-family:'Outfit',sans-serif}
+#disp-send:hover{opacity:.88}
+#disp-send:disabled{opacity:.45;cursor:not-allowed}
+#disp-progress{display:none}
+.disp-pbar-wrap{background:rgba(255,255,255,0.07);border-radius:20px;height:10px;margin:10px 0}
+.disp-pbar{background:linear-gradient(90deg,#C9A84C,#E8C97A);height:10px;border-radius:20px;transition:width .4s}
+#disp-log{max-height:200px;overflow-y:auto;font-size:.73rem;font-family:monospace;background:#0A0F1E;border:1px solid rgba(255,255,255,0.05);color:#F0EDE8;border-radius:8px;padding:10px 12px;margin-top:10px;line-height:1.7}
+#disp-log .ok{color:#2ECC71}
+#disp-log .err{color:#E74C3C}
+#disp-log .inf{color:#C9A84C}
+#disp-stats{display:flex;gap:14px;font-size:.8rem;margin-top:8px}
+.ds-ok{color:#2ECC71;font-weight:700}
+.ds-err{color:#E74C3C;font-weight:700}
+
+.no-res{text-align:center;padding:50px 20px;color:rgba(240,237,232,0.3)}
+.no-res .ico{font-size:2.5rem;margin-bottom:10px}
+
+/* ── Seletor de lista ── */
+.list-selector{display:flex;gap:5px;align-items:center}
+.ls-btn{padding:6px 14px;border:1px solid rgba(255,255,255,0.18);border-radius:8px;background:transparent;color:rgba(240,237,232,0.6);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .18s;white-space:nowrap;font-family:'Outfit',sans-serif}
+.ls-btn:hover{background:rgba(255,255,255,0.07);color:#F0EDE8}
+.ls-btn.on{background:rgba(201,168,76,0.15);border-color:rgba(201,168,76,0.4);color:#E8C97A}
+
+body.list-novo-tempo .hide-novo-tempo{display:none!important}
+
+#list-loading{display:none;text-align:center;padding:40px;color:rgba(240,237,232,0.4);font-size:.9rem}
+body.list-loading #list-loading{display:block}
+body.list-loading .tw,body.list-loading .stats,body.list-loading .af,body.list-loading .search-wrap{opacity:.35;pointer-events:none}
+
+.pag{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#0A0F1E;border-top:1px solid rgba(255,255,255,0.05);font-size:.8rem;color:rgba(240,237,232,0.4)}
+.pbs{display:flex;gap:3px}
+.pb{padding:5px 11px;border:1px solid rgba(255,255,255,0.07);border-radius:6px;background:#1A2235;cursor:pointer;font-size:.78rem;color:rgba(240,237,232,0.6);transition:all .15s;font-family:'Outfit',sans-serif}
+.pb:hover{background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.3);color:#C9A84C}
+.pb.on{background:linear-gradient(135deg,#C9A84C,#E8C97A);color:#0A0F1E;border-color:#C9A84C;font-weight:600}
+.pb[disabled]{opacity:.35;cursor:not-allowed}
+
+/* ── Mobile ── */
+.filter-toggle{display:none}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:998;backdrop-filter:blur(2px)}
+
+@media(max-width:768px){
+  .header{padding:13px 14px;flex-wrap:wrap;gap:8px}
+  .header h1{font-size:1rem}
+  .header .sub{font-size:.75rem}
+  .badge{font-size:.75rem;padding:4px 10px}
+  .list-selector{order:-1;width:100%}
+
+  .filter-toggle{
+    display:flex;align-items:center;gap:6px;
+    padding:7px 13px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);
+    border-radius:8px;color:#E8C97A;font-size:.82rem;font-weight:600;cursor:pointer;
+    white-space:nowrap;font-family:'Outfit',sans-serif
+  }
+
+  .layout{flex-direction:column}
+
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;width:82vw;max-width:320px;
+    z-index:999;transform:translateX(-105%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    overflow-y:auto;padding-top:56px;box-shadow:4px 0 24px rgba(0,0,0,.5)
+  }
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-backdrop.open{display:block}
+
+  .sb-close{
+    display:flex;position:absolute;top:14px;right:14px;
+    background:none;border:none;font-size:1.3rem;cursor:pointer;color:rgba(240,237,232,0.4);padding:4px
+  }
+
+  .main{padding:12px}
+
+  .stats{flex-wrap:wrap;gap:10px}
+  .sd{flex-wrap:wrap;gap:10px}
+  .btn-exp{font-size:.75rem;padding:6px 10px}
+
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:640px}
+
+  .pag{flex-direction:column;gap:8px;align-items:flex-start}
+  .pbs{flex-wrap:wrap}
+}
+
+/* ── Toast ── */
+#toast-wrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.toast{padding:10px 20px;border-radius:10px;font-size:.85rem;font-weight:600;color:#F0EDE8;box-shadow:0 4px 18px rgba(0,0,0,.5);opacity:0;transform:translateY(20px);transition:opacity .3s,transform .3s;pointer-events:none;max-width:360px;text-align:center;font-family:'Outfit',sans-serif;backdrop-filter:blur(8px)}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.t-ok{background:rgba(46,204,113,0.88);border:1px solid rgba(46,204,113,0.3)}
+.toast.t-err{background:rgba(231,76,60,0.88);border:1px solid rgba(231,76,60,0.3)}
+.toast.t-info{background:rgba(201,168,76,0.92);color:#0A0F1E;border:1px solid rgba(201,168,76,0.4)}
+.toast.t-warn{background:rgba(230,126,34,0.88);border:1px solid rgba(230,126,34,0.3)}
+
+/* ── Opt-out & Acoes ── */
+.boo{background:rgba(231,76,60,0.14);color:#E74C3C;border:1px solid rgba(231,76,60,0.22);border-radius:20px;padding:2px 8px;font-size:.65rem;font-weight:600;margin-left:4px;white-space:nowrap}
+tr.row-optout td{opacity:.38}
+tr.row-optout{background:rgba(231,76,60,0.04)!important}
+.btn-act{padding:3px 8px;border:none;border-radius:5px;cursor:pointer;font-size:.75rem;font-weight:600;line-height:1.4;transition:opacity .15s;white-space:nowrap;font-family:'Outfit',sans-serif}
+.btn-act:hover{opacity:.7}
+.btn-edit-row{background:rgba(46,100,220,0.18);color:#90b8f8;border:1px solid rgba(46,100,220,0.18)}
+.btn-oo-row{background:rgba(231,76,60,0.14);color:#E74C3C;border:1px solid rgba(231,76,60,0.18)}
+.btn-activate-row{background:rgba(46,204,113,0.14);color:#2ECC71;border:1px solid rgba(46,204,113,0.18)}
+
+/* ── Modal Editar ── */
+#edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+#edit-overlay.hidden{display:none}
+#edit-box{background:#111827;border:1px solid rgba(255,255,255,0.1);border-radius:16px;width:100%;max-width:500px;box-shadow:0 24px 64px rgba(0,0,0,.6);overflow:hidden;max-height:92vh;display:flex;flex-direction:column}
+#edit-head{background:#1A2235;border-bottom:1px solid rgba(201,168,76,0.18);color:#F0EDE8;padding:15px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#edit-head h2{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:#E8C97A}
+#edit-head button{background:none;border:none;color:rgba(240,237,232,0.45);font-size:1.3rem;cursor:pointer;padding:2px 6px;border-radius:6px;transition:color .2s}
+#edit-head button:hover{color:#F0EDE8}
+#edit-body{padding:16px 20px;overflow-y:auto;flex:1;background:#111827}
+.ef-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ef-row{margin-bottom:10px}
+.ef-label{font-size:.73rem;font-weight:500;color:rgba(240,237,232,0.55);margin-bottom:4px;display:block}
+.ef-inp{width:100%;border:1px solid rgba(255,255,255,0.07);border-radius:7px;padding:7px 10px;font-size:.82rem;background:#1A2235;outline:none;font-family:'Outfit',sans-serif;color:#F0EDE8}
+.ef-inp:focus{border-color:rgba(201,168,76,0.5);box-shadow:0 0 0 3px rgba(201,168,76,0.12)}
+#edit-save{width:100%;padding:10px;background:linear-gradient(135deg,#C9A84C,#E8C97A);color:#0A0F1E;border:none;border-radius:8px;font-size:.88rem;font-weight:700;cursor:pointer;margin-top:4px;transition:opacity .2s;font-family:'Outfit',sans-serif}
+#edit-save:hover{opacity:.88}
+
+/* ── Modal Historico ── */
+#hist-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+#hist-overlay.hidden{display:none}
+#hist-box{background:#111827;border:1px solid rgba(255,255,255,0.1);border-radius:16px;width:100%;max-width:680px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.6);overflow:hidden}
+#hist-head{background:#1A2235;border-bottom:1px solid rgba(201,168,76,0.18);color:#F0EDE8;padding:15px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#hist-head h2{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:#E8C97A}
+#hist-head button{background:none;border:none;color:rgba(240,237,232,0.45);font-size:1.3rem;cursor:pointer;padding:2px 6px;border-radius:6px;transition:color .2s}
+#hist-head button:hover{color:#F0EDE8}
+#hist-body{overflow-y:auto;flex:1;background:#111827}
+.hi{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:background .12s}
+.hi:hover{background:#1A2235}
+.hi-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hi-date{font-size:.78rem;color:rgba(240,237,232,0.6);font-weight:600;flex:1}
+.hi-ch{font-size:.7rem;background:rgba(255,255,255,0.06);border-radius:20px;padding:2px 8px;color:rgba(240,237,232,0.4)}
+.hi-st{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px}
+.hi-st.done{background:rgba(46,204,113,0.14);color:#2ECC71}
+.hi-st.running{background:rgba(46,100,220,0.14);color:#90b8f8}
+.hi-st.error,.hi-st.unknown{background:rgba(231,76,60,0.14);color:#E74C3C}
+.hi-nums{display:flex;gap:14px;margin-top:5px;font-size:.76rem}
+.hi-ok2{color:#2ECC71;font-weight:700}
+.hi-err2{color:#E74C3C;font-weight:700}
+.hi-tot2{color:rgba(240,237,232,0.4)}
+.hi-detail{display:none;background:#0A0F1E;padding:8px 18px 12px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:.75rem;color:rgba(240,237,232,0.55)}
+.hi-detail.open{display:block}
+.hi-dlog{max-height:180px;overflow-y:auto;font-size:.7rem;font-family:monospace;background:#0A0F1E;border:1px solid rgba(255,255,255,0.05);color:#F0EDE8;border-radius:7px;padding:8px 12px;line-height:1.7;margin-top:6px}
+.hi-dlog .ok{color:#2ECC71}
+.hi-dlog .err{color:#E74C3C}
+.hi-dlog .inf{color:#C9A84C}
+
+/* ── Reparar pos-disparo ── */
+#repair-wrap{display:none;margin-top:12px;border:1px solid rgba(201,168,76,0.22);border-radius:8px;overflow:hidden}
+#repair-title{background:rgba(201,168,76,0.08);padding:8px 14px;font-size:.8rem;font-weight:700;color:#E8C97A;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
+#repair-list{max-height:200px;overflow-y:auto;padding:0 0 4px;background:#111827}
+.rp-row{display:flex;align-items:center;gap:7px;padding:7px 14px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:.75rem;flex-wrap:wrap;color:#F0EDE8}
+.rp-name{font-weight:600;flex:1;min-width:80px}
+.rp-err{color:#E74C3C;font-size:.68rem;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="password-gate">
+  <div id="password-box">
+    <div class="logo">Comunidade Ser</div>
+    <div class="sub">Digite a senha para acessar o sistema</div>
+    <form id="pw-form" autocomplete="off">
+      <input type="password" id="pw-input" placeholder="Senha" autofocus autocomplete="current-password">
+      <button type="submit">Entrar</button>
+      <div id="password-error"></div>
+    </form>
+  </div>
+</div>
+
+<div class="header">
+  <div>
+    <h1>📋 Sistema de Filtros — <span id="list-name">Novo Tempo</span></h1>
+    <div class="sub">Manaus, AM — Banco de dados de alunos</div>
+  </div>
+  <div class="list-selector">
+    <button class="ls-btn on" data-list="novo-tempo" onclick="switchList(this)">🕑 Novo Tempo</button>
+    <button class="ls-btn" data-list="transmissao" onclick="switchList(this)">📡 Transmissão</button>
+    <button class="ls-btn" data-list="conectados-run" onclick="switchList(this)">🏃 Conectados Run</button>
+  </div>
+  <button class="filter-toggle" onclick="toggleSidebar()">🔍 Filtros</button>
+  <div class="badge" id="hdr-badge">0 registros</div>
+</div>
+<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
+<div class="layout">
+  <div class="sidebar" id="sidebar">
+    <button class="sb-close" onclick="toggleSidebar()" title="Fechar filtros">✕</button>
+    <div class="sb-title">🔍 Filtros</div>
+
+    <div class="fs hide-novo-tempo">
+      <div class="fl">📍 Bairro</div>
+      <select id="f-bairro" onchange="applyFilters()">
+        <option value="">Todos os bairros</option>
+<option value="A Ap 201">A Ap 201</option>
+<option value="A, Blc Açai, Cond Tropical Privê">A, Blc Açai, Cond Tropical Privê</option>
+<option value="A, Vila Municipal">A, Vila Municipal</option>
+<option value="A. Cond Joan Miro">A. Cond Joan Miro</option>
+<option value="A; AP. 102">A; AP. 102</option>
+<option value="Adrianópolis">Adrianópolis</option>
+<option value="Antiga Rua Tres, 25, Conjunto Ica Apartamento C">Antiga Rua Tres, 25, Conjunto Ica Apartamento C</option>
+<option value="Ap. 802 Conj. Vieira Alves">Ap. 802 Conj. Vieira Alves</option>
+<option value="Apt 504">Apt 504</option>
+<option value="Bloco M Apto. 102">Bloco M Apto. 102</option>
+<option value="Cond Sta Clara">Cond Sta Clara</option>
+<option value="Cond. Salvador Dali">Cond. Salvador Dali</option>
+<option value="Conjunto Ica">Conjunto Ica</option>
+<option value="Ed. Bromélia, 121, Apto. 503">Ed. Bromélia, 121, Apto. 503</option>
+<option value="Em Frente SANTANDER">Em Frente SANTANDER</option>
+<option value="Forum Ministro Henoch Reis, s.n, Setor 6">Forum Ministro Henoch Reis, s.n, Setor 6</option>
+<option value="Nossa Senhora das Graças">Nossa Senhora das Graças</option>
+<option value="Outros/Não identificado">Outros/Não identificado</option>
+<option value="ao lado da Academia Atala">ao lado da Academia Atala</option>
+      </select>
+    </div>
+
+    <div class="fs hide-novo-tempo">
+      <div class="fl">⛪ Religião</div>
+      <select id="f-religiao" onchange="applyFilters()">
+        <option value="">Todas as religiões</option>
+<option value="Adventista da Promessa">Adventista da Promessa</option>
+<option value="Adventista do 7º dia( Afastado)">Adventista do 7º dia( Afastado)</option>
+<option value="Adventista do 7º dia(interessado)">Adventista do 7º dia(interessado)</option>
+<option value="Adventista do 7º dia(removido)">Adventista do 7º dia(removido)</option>
+<option value="Assembléia de Deus">Assembléia de Deus</option>
+<option value="Batista">Batista</option>
+<option value="Catolicismo">Catolicismo</option>
+<option value="Congregação Cristã no Brasil">Congregação Cristã no Brasil</option>
+<option value="Cristão">Cristão</option>
+<option value="Espiritismo">Espiritismo</option>
+<option value="Evangelho Quadrangular">Evangelho Quadrangular</option>
+<option value="Evangélica">Evangélica</option>
+<option value="Internacional da Graça de Deus">Internacional da Graça de Deus</option>
+<option value="Maranata">Maranata</option>
+<option value="Metodista">Metodista</option>
+<option value="Não Informado">Não Informado</option>
+<option value="Outros">Outros</option>
+<option value="Pentecostal">Pentecostal</option>
+<option value="Presbiteriana">Presbiteriana</option>
+<option value="Protestante">Protestante</option>
+<option value="Santos dos Últimos Dias (Mórmon)">Santos dos Últimos Dias (Mórmon)</option>
+<option value="Sem religião">Sem religião</option>
+<option value="Umbanda">Umbanda</option>
+<option value="Universal do Reino de Deus">Universal do Reino de Deus</option>
+      </select>
+    </div>
+
+    <div class="fs hide-novo-tempo">
+      <div class="fl">🧑 Sexo</div>
+      <div class="radio-g" id="rg-sexo">
+        <div class="rb on" data-v="">Todos</div>
+        <div class="rb" data-v="Feminino">♀ Feminino</div>
+        <div class="rb" data-v="Masculino">♂ Masculino</div>
+        <div class="rb" data-v="Não Informado">N/I</div>
+      </div>
+    </div>
+
+    <div class="fs hide-novo-tempo">
+      <div class="fl">⭐ VIP</div>
+      <div class="radio-g" id="rg-vip">
+        <div class="rb on" data-v="">Todos</div>
+        <div class="rb" data-v="Sim">⭐ Sim</div>
+        <div class="rb" data-v="Não">Não</div>
+      </div>
+    </div>
+
+    <div class="fs hide-novo-tempo">
+      <div class="fl">🎂 Faixa etária (anos)</div>
+      <div class="age-row">
+        <input type="number" id="f-imin" placeholder="Mín" min="0" max="120" oninput="applyFilters()">
+        <span>até</span>
+        <input type="number" id="f-imax" placeholder="Máx" min="0" max="120" oninput="applyFilters()">
+      </div>
+    </div>
+
+    <div class="fs hide-novo-tempo">
+      <div class="fl">📦 Material solicitado</div>
+      <select id="f-material" onchange="applyFilters()">
+        <option value="">Todos os materiais</option>
+<option value="Evidências">Evidências</option>
+<option value="RESPOSTAS- IVAN SARAIVA">RESPOSTAS- IVAN SARAIVA</option>
+<option value="CD VERDADES BÍBLICAS (CID MOREIRA)">CD VERDADES BÍBLICAS (CID MOREIRA)</option>
+<option value="FIQUE LEVE">FIQUE LEVE</option>
+<option value="APOCALIPSE">APOCALIPSE</option>
+<option value="DANIEL">DANIEL</option>
+<option value="BÍBLIA FÁCIL">BÍBLIA FÁCIL</option>
+<option value="Deus me ouve?">Deus me ouve?</option>
+<option value="Sentimentos a Ciência do Existir">Sentimentos a Ciência do Existir</option>
+<option value="PRINCÍPIOS">PRINCÍPIOS</option>
+<option value="VERDADES PARA O TEMPO DO FIM (EST. BÍBLICO)">VERDADES PARA O TEMPO DO FIM (EST. BÍBLICO)</option>
+<option value="Apocalipse-Revelações de Esperança">Apocalipse-Revelações de Esperança</option>
+<option value="O CONVITE – PR. IVAN SARAIVA">O CONVITE – PR. IVAN SARAIVA</option>
+<option value="ENSINOS DE JESUS">ENSINOS DE JESUS</option>
+<option value="Mente Feliz">Mente Feliz</option>
+<option value="Na Mira da Verdade">Na Mira da Verdade</option>
+<option value="PAULO">PAULO</option>
+<option value="Eu Creio">Eu Creio</option>
+<option value="Pais preparados, filhos de caráter">Pais preparados, filhos de caráter</option>
+<option value="Marcadas Pela Fé">Marcadas Pela Fé</option>
+<option value="VERDADES PARA O TEMPO DO FIM">VERDADES PARA O TEMPO DO FIM</option>
+<option value="Saldo Mais">Saldo Mais</option>
+<option value="Educação Financeira à Luz da Bíblia">Educação Financeira à Luz da Bíblia</option>
+<option value="ENTRE FAMÍLIA">ENTRE FAMÍLIA</option>
+<option value="Santuário">Santuário</option>
+<option value="Descobertas Bíblicas">Descobertas Bíblicas</option>
+<option value="A Cura do Pecado">A Cura do Pecado</option>
+<option value="Intimidade com Deus">Intimidade com Deus</option>
+<option value="Espírito Santo">Espírito Santo</option>
+<option value="Jesus">Jesus</option>
+<option value="Descobrindo Tesouros">Descobrindo Tesouros</option>
+<option value="À procura da Verdade">À procura da Verdade</option>
+<option value="A Máquina Humana">A Máquina Humana</option>
+<option value="Sentimentos e Emoções">Sentimentos e Emoções</option>
+<option value="Sem Tabus">Sem Tabus</option>
+<option value="Eu no Universo">Eu no Universo</option>
+<option value="DVD o Sentido da Fé">DVD o Sentido da Fé</option>
+<option value="DVD TEMPO DE ESPERANÇA (PR. LUIZ GONÇALVES)">DVD TEMPO DE ESPERANÇA (PR. LUIZ GONÇALVES)</option>
+<option value="Divertir e Instruir">Divertir e Instruir</option>
+<option value="BÍBLIA FACIL APOCALIPSE">BÍBLIA FACIL APOCALIPSE</option>
+<option value="Bíblia Fácil">Bíblia Fácil</option>
+<option value="Espiritismo">Espiritismo</option>
+<option value="Fique Leve">Fique Leve</option>
+<option value="Ouvindo a Voz de Deus">Ouvindo a Voz de Deus</option>
+<option value="Apocalipse">Apocalipse</option>
+<option value="A Origem de Tudo">A Origem de Tudo</option>
+<option value="Céu ou Inferno">Céu ou Inferno</option>
+<option value="OUVINDO A VOZ DE DEUS (ESTUDO BÍBLICO)">OUVINDO A VOZ DE DEUS (ESTUDO BÍBLICO)</option>
+<option value="O Espiritismo à luz da Bíblia">O Espiritismo à luz da Bíblia</option>
+<option value="A ULTIMA ESPERANÇA (ISRAEL)">A ULTIMA ESPERANÇA (ISRAEL)</option>
+<option value="Livro Esperança">Livro Esperança</option>
+<option value="BRINDE DOE EM DOBRO (MARÇO)">BRINDE DOE EM DOBRO (MARÇO)</option>
+<option value="Incríveis Milagres">Incríveis Milagres</option>
+<option value="O Sábado da Criação">O Sábado da Criação</option>
+<option value="Super Lupa- A volta ao mundo em 7 dias">Super Lupa- A volta ao mundo em 7 dias</option>
+<option value="Lar Doce Lar">Lar Doce Lar</option>
+<option value="FAMÍLIA FELIZ (ESTUDO BÍBLICO)">FAMÍLIA FELIZ (ESTUDO BÍBLICO)</option>
+<option value="O RESGATE DA VERDADE (ESTUDO BÍBLICO)">O RESGATE DA VERDADE (ESTUDO BÍBLICO)</option>
+<option value="Bíblia Fácil – Daniel">Bíblia Fácil – Daniel</option>
+<option value="MOMENTOS DE ALEGRIA">MOMENTOS DE ALEGRIA</option>
+<option value="BRINDE DOAÇÃO EXTRA (MAIO)">BRINDE DOAÇÃO EXTRA (MAIO)</option>
+<option value="ACORDES">ACORDES</option>
+<option value="REVISTA VIVA COM ESPERANÇA">REVISTA VIVA COM ESPERANÇA</option>
+<option value="BRINDE CONVIDE UM AMIGO (AGOSTO)">BRINDE CONVIDE UM AMIGO (AGOSTO)</option>
+<option value="Bíblia Fácil Apocalipse">Bíblia Fácil Apocalipse</option>
+<option value="Paulo, o Mensageiro da Cruz">Paulo, o Mensageiro da Cruz</option>
+<option value="Apocalipse- O Fim Revelado">Apocalipse- O Fim Revelado</option>
+<option value="REVISTA VERDADE PARA O TEMPO DO FIM VOL. 3">REVISTA VERDADE PARA O TEMPO DO FIM VOL. 3</option>
+<option value="REVISTA VERDADE PARA O TEMPO DO FIM VOL. 2">REVISTA VERDADE PARA O TEMPO DO FIM VOL. 2</option>
+<option value="REVISTA VERDADE PARA O TEMPO DO FIM VOL. 1">REVISTA VERDADE PARA O TEMPO DO FIM VOL. 1</option>
+<option value="LIVRO ESPERANÇA PARA VIVER (ANO 2007)">LIVRO ESPERANÇA PARA VIVER (ANO 2007)</option>
+<option value="Não utilizar este produto">Não utilizar este produto</option>
+<option value="A BÍBLIA ENSINA">A BÍBLIA ENSINA</option>
+<option value="Livro A Grande Esperança ( Digital">Livro A Grande Esperança ( Digital</option>
+<option value="Ensinos de Jesus">Ensinos de Jesus</option>
+<option value="DESCOBRINDO JESUS">DESCOBRINDO JESUS</option>
+<option value="Maravilhoso Jesus">Maravilhoso Jesus</option>
+<option value="A VERDADE">A VERDADE</option>
+<option value="Livro Missionário 2021">Livro Missionário 2021</option>
+<option value="O grande Conflito">O grande Conflito</option>
+<option value="Entre Família">Entre Família</option>
+<option value="A Maior Esperança">A Maior Esperança</option>
+<option value="Eventos Finais">Eventos Finais</option>
+      </select>
+    </div>
+
+    <div class="fs hide-novo-tempo">
+      <div class="fl">📅 Data de solicitação</div>
+      <div class="date-row">
+        <input type="date" id="f-dini" onchange="applyFilters()" placeholder="De">
+        <span>até</span>
+        <input type="date" id="f-dfim" onchange="applyFilters()" placeholder="Até">
+      </div>
+    </div>
+
+    <div class="fs">
+      <div class="fl">📱 WhatsApp</div>
+      <div class="radio-g" id="rg-wp">
+        <div class="rb on" data-v="">Todos</div>
+        <div class="rb" data-v="1">✅ Válido</div>
+        <div class="rb" data-v="0">❌ Sem WA</div>
+      </div>
+    </div>
+
+    <div class="fs">
+      <div class="fl">🚫 Status do contato</div>
+      <div class="radio-g" id="rg-oo">
+        <div class="rb on" data-v="">Todos</div>
+        <div class="rb" data-v="ativo">✅ Ativo</div>
+        <div class="rb" data-v="optout">🚫 Opt-out</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <button class="btn-reset" onclick="resetAll()">🗑 Limpar filtros</button>
+  </div>
+
+  <div class="main">
+    <div class="stats">
+      <div>
+        <div class="sc" id="cnt">392</div>
+        <div class="sl">registros encontrados</div>
+      </div>
+      <div class="sd">
+        <div><div class="si-n" id="s-f">0</div><div class="si-l">Feminino</div></div>
+        <div><div class="si-n" id="s-m">0</div><div class="si-l">Masculino</div></div>
+        <div><div class="si-n" id="s-v">0</div><div class="si-l">VIP</div></div>
+        <div><div class="si-n" id="s-a">—</div><div class="si-l">Idade média</div></div>
+        <div><div class="si-n" id="s-wp">0</div><div class="si-l">📱 WhatsApp</div></div>
+        <div><div class="si-n" id="s-oo">0</div><div class="si-l">🚫 Opt-out</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-exp" onclick="exportCSV()">⬇ Exportar CSV</button>
+        <button class="btn-exp" style="background:#553c9a" onclick="openHistory()">📋 Histórico</button>
+        <button class="btn-exp" style="background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.3);color:#2ECC71" onclick="openDisp()">📤 Disparar</button>
+      </div>
+    </div>
+
+    <div class="af" id="af"></div>
+
+    <div class="search-wrap">
+      <span class="si">🔎</span>
+      <input type="text" id="f-search" placeholder="Buscar por nome, email, telefone ou material..." oninput="applyFilters()">
+    </div>
+
+    <div id="list-loading">⏳ Carregando lista...</div>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('nome')">Nome <span id="sn-nome">↕</span></th>
+            <th onclick="sortBy('bairro')">Bairro <span id="sn-bairro">↕</span></th>
+            <th onclick="sortBy('religiao')">Religião <span id="sn-religiao">↕</span></th>
+            <th onclick="sortBy('sexo')">Sexo <span id="sn-sexo">↕</span></th>
+            <th onclick="sortBy('idade')">Idade <span id="sn-idade">↕</span></th>
+            <th onclick="sortBy('vip')">VIP <span id="sn-vip">↕</span></th>
+            <th onclick="sortBy('solicitacao_iso')">Data Solic. <span id="sn-solicitacao_iso">↕</span></th>
+            <th>Materiais</th>
+            <th>📧 Email</th>
+            <th>📱 WhatsApp</th>
+            <th>📱 WhatsApp 2</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tb"></tbody>
+      </table>
+      <div id="no-res" class="no-res" style="display:none">
+        <div class="ico">🔍</div>
+        <div>Nenhum registro encontrado.</div>
+      </div>
+      <div class="pag">
+        <div id="pi"></div>
+        <div class="pbs" id="pb"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-wrap"></div>
+
+<!-- Modal Editar -->
+<div id="edit-overlay" class="hidden">
+  <div id="edit-box">
+    <div id="edit-head">
+      <h2 style="font-size:.95rem;font-weight:700">✏️ Editar Registro</h2>
+      <button onclick="closeEdit()" style="background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;padding:2px 6px;border-radius:6px">✕</button>
+    </div>
+    <div id="edit-body">
+      <div class="ef-2">
+        <div class="ef-row">
+          <label class="ef-label">Nome completo</label>
+          <input class="ef-inp" id="ef-nome" type="text">
+        </div>
+        <div class="ef-row">
+          <label class="ef-label">Sexo</label>
+          <select class="ef-inp" id="ef-sexo">
+            <option>Feminino</option><option>Masculino</option><option>Não Informado</option>
+          </select>
+        </div>
+      </div>
+      <div class="ef-2">
+        <div class="ef-row">
+          <label class="ef-label">WhatsApp principal</label>
+          <input class="ef-inp" id="ef-tel" type="text" placeholder="5592912345678">
+        </div>
+        <div class="ef-row">
+          <label class="ef-label">WhatsApp 2</label>
+          <input class="ef-inp" id="ef-tel2" type="text">
+        </div>
+      </div>
+      <div class="ef-2">
+        <div class="ef-row">
+          <label class="ef-label">Email</label>
+          <input class="ef-inp" id="ef-email" type="email">
+        </div>
+        <div class="ef-row">
+          <label class="ef-label">Email 2</label>
+          <input class="ef-inp" id="ef-email2" type="email">
+        </div>
+      </div>
+      <div class="ef-2">
+        <div class="ef-row">
+          <label class="ef-label">Bairro</label>
+          <input class="ef-inp" id="ef-bairro" type="text">
+        </div>
+        <div class="ef-row">
+          <label class="ef-label">Religião</label>
+          <input class="ef-inp" id="ef-religiao" type="text">
+        </div>
+      </div>
+      <div class="ef-2">
+        <div class="ef-row">
+          <label class="ef-label">Idade</label>
+          <input class="ef-inp" id="ef-idade" type="number" min="0" max="120">
+        </div>
+        <div class="ef-row">
+          <label class="ef-label">VIP</label>
+          <select class="ef-inp" id="ef-vip"><option>Sim</option><option>Não</option></select>
+        </div>
+      </div>
+      <button id="edit-save" onclick="saveEdit()">💾 Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Histórico -->
+<div id="hist-overlay" class="hidden">
+  <div id="hist-box">
+    <div id="hist-head">
+      <h2 style="font-size:.95rem;font-weight:700">📋 Histórico de Disparos</h2>
+      <button onclick="closeHistory()" style="background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;padding:2px 6px;border-radius:6px">✕</button>
+    </div>
+    <div id="hist-body">
+      <div style="text-align:center;padding:40px;color:rgba(240,237,232,0.45)">⏳ Carregando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Disparo -->
+<div id="disp-overlay" class="hidden">
+  <div id="disp-box">
+    <div id="disp-head">
+      <h2>📤 Disparar Mensagem</h2>
+      <button id="disp-close" onclick="closeDisp()">✕</button>
+    </div>
+    <div id="disp-body">
+
+      <div id="disp-form">
+        <div class="disp-label">Canal</div>
+        <div class="disp-tabs">
+          <div class="disp-tab on" data-ch="both"  onclick="setChannel(this)">📧 + 📱 Ambos</div>
+          <div class="disp-tab"    data-ch="email"     onclick="setChannel(this)">📧 Só Email</div>
+          <div class="disp-tab"    data-ch="whatsapp"  onclick="setChannel(this)">📱 Só WhatsApp</div>
+        </div>
+
+        <div class="disp-row" id="subject-row">
+          <label class="disp-label">Assunto (email)</label>
+          <input id="disp-subject" type="text" placeholder="Ex: Mensagem da Comunidade Ser">
+        </div>
+
+        <div class="disp-row">
+          <label class="disp-label" style="display:flex;justify-content:space-between;align-items:center">
+            Mensagem
+            <span style="font-weight:400;color:rgba(240,237,232,0.45)">Tags disponíveis:
+              <code onclick="insertTag('{nome}')" title="Clique para inserir" style="background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.25);border-radius:4px;padding:1px 6px;cursor:pointer;color:#E8C97A;font-size:.75rem">{nome}</code>
+            </span>
+          </label>
+          <textarea id="disp-msg" placeholder="Ex: Olá {nome}, temos uma mensagem especial para você..."></textarea>
+        </div>
+
+        <div id="disp-preview"></div>
+
+        <div style="display:flex;gap:8px">
+          <button id="disp-send" onclick="startDispatch()" style="flex:1">📤 Disparar para lista</button>
+          <button onclick="openTest()" style="padding:12px 16px;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);border-radius:10px;color:#E8C97A;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Outfit',sans-serif" title="Enviar teste para um contato específico">🧪 Teste</button>
+        </div>
+      </div>
+
+      <!-- Painel de teste -->
+      <div id="disp-test" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <button onclick="closeTest()" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:rgba(240,237,232,0.5)">←</button>
+          <span style="font-weight:700;color:#F0EDE8">🧪 Envio de Teste</span>
+        </div>
+        <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:10px 14px;font-size:.77rem;color:rgba(240,237,232,0.65);margin-bottom:14px">
+          Envia a mensagem acima para um destinatário de teste. Não afeta a lista principal.
+        </div>
+        <div class="disp-row">
+          <label class="disp-label">Nome do destinatário</label>
+          <input id="test-nome" type="text" class="disp-subject-inp" placeholder="Ex: João Teste" style="width:100%;border:1px solid rgba(255,255,255,0.08);border-radius:8px;font-size:.85rem;padding:9px 12px;outline:none;background:#1A2235;color:#F0EDE8;font-family:'Outfit',sans-serif">
+        </div>
+        <div class="disp-row">
+          <label class="disp-label">Email de teste</label>
+          <input id="test-email" type="email" placeholder="Ex: seuemail@gmail.com" style="width:100%;border:1px solid rgba(255,255,255,0.08);border-radius:8px;font-size:.85rem;padding:9px 12px;outline:none;background:#1A2235;color:#F0EDE8;font-family:'Outfit',sans-serif">
+        </div>
+        <div class="disp-row">
+          <label class="disp-label">WhatsApp de teste <span style="color:rgba(240,237,232,0.4);font-weight:400">(somente números, com DDI — ex: 5592912345678)</span></label>
+          <input id="test-wa" type="text" placeholder="Ex: 5592912345678" style="width:100%;border:1px solid rgba(255,255,255,0.08);border-radius:8px;font-size:.85rem;padding:9px 12px;outline:none;background:#1A2235;color:#F0EDE8;font-family:'Outfit',sans-serif">
+        </div>
+        <button id="test-send" onclick="sendTest()" style="width:100%;padding:12px;background:linear-gradient(135deg,#C9A84C,#E8C97A);color:#0A0F1E;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif">🧪 Enviar teste agora</button>
+      </div>
+
+      <div id="disp-progress">
+        <div id="disp-stats"><span class="ds-ok" id="dp-ok">✅ 0 enviados</span><span class="ds-err" id="dp-err">❌ 0 falhas</span><span id="dp-info" style="color:rgba(240,237,232,0.45)"></span></div>
+        <div class="disp-pbar-wrap"><div class="disp-pbar" id="disp-pbar" style="width:0%"></div></div>
+        <div id="disp-log"></div>
+        <div id="repair-wrap">
+          <div id="repair-title" onclick="document.getElementById('repair-list').style.display=document.getElementById('repair-list').style.display==='none'?'block':'none'">
+            🔧 Contatos com falha — clique para ver e reparar <span id="repair-count"></span>
+            <span style="font-size:.8rem;color:rgba(240,237,232,0.35)">▼</span>
+          </div>
+          <div id="repair-list"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const PS = 50;
+let DATA=[], fil=[], sc = '', sd = 1, pg = 1;
+let sv = '', vv = '', wv = '', oov = '';
+let editIdx = -1;
+
+// Extrai cidade do endereço (ex: "... - MANAUS - AM - CEP: ...")
+function extractCity(endereco) {
+  if (!endereco) return '';
+  const m = endereco.match(/- ([A-ZÀ-Ú ]+) - [A-Z]{2} -/);
+  return m ? m[1].trim() : '';
+}
+
+// Gera links de busca em redes sociais para registros sem contato
+function buildSocialLinks(r) {
+  const hasContact = r.email || r.email2 || normalizePhone(r.telefone) || normalizePhone(r.telefone2);
+  if (hasContact) return '<span style="color:#cbd5e0;font-size:.7rem">—</span>';
+
+  const cidade = extractCity(r.endereco) || 'Manaus';
+  // Bairro real: evitar bairros que parecem endereços completos (> 40 chars)
+  const bairro = (r.bairro && r.bairro.length < 40) ? r.bairro : '';
+  const loc = [bairro, cidade, 'AM'].filter(Boolean).join(' ');
+
+  const qGoogle = encodeURIComponent(`"${r.nome}" ${loc}`);
+  const qFb     = encodeURIComponent(r.nome);
+  const qLi     = encodeURIComponent(`${r.nome} ${cidade}`);
+  const qIg     = encodeURIComponent(r.nome.split(' ').slice(0,2).join(' '));
+
+  const sexoHint = r.sexo === 'Feminino' ? ' mulher' : r.sexo === 'Masculino' ? ' homem' : '';
+  const idadeHint = r.idade ? ` ${r.idade} anos` : '';
+  const qGoogleFull = encodeURIComponent(`"${r.nome}"${sexoHint}${idadeHint} ${loc} site:facebook.com OR site:instagram.com OR site:linkedin.com`);
+
+  return `<div class="soc-links">
+    <a class="soc-btn soc-gg" href="https://www.google.com/search?q=${qGoogleFull}" target="_blank" title="Busca completa no Google">🔍 Google</a>
+    <a class="soc-btn soc-fb" href="https://www.facebook.com/search/people/?q=${qFb}" target="_blank" title="Buscar no Facebook">f Facebook</a>
+    <a class="soc-btn soc-ig" href="https://www.instagram.com/explore/search/keyword/?q=${qIg}" target="_blank" title="Buscar no Instagram">📷 Instagram</a>
+    <a class="soc-btn soc-li" href="https://www.linkedin.com/search/results/people/?keywords=${qLi}" target="_blank" title="Buscar no LinkedIn">in LinkedIn</a>
+  </div>`;
+}
+
+// Normaliza número para WhatsApp/Evolution API
+// Retorna string com dígitos apenas (ex: "5592981234567") ou null se inválido
+function normalizePhone(raw) {
+  if (!raw) return null;
+  const n = raw.replace(/\D/g, '');
+  if (!n.startsWith('55')) return null;
+  const ddd = n.slice(2, 4);
+  const local = n.slice(4);
+  if (ddd.length < 2) return null;
+  if (local.length === 9 && /^[6-9]/.test(local)) return '55' + ddd + local; // celular 9 dígitos
+  if (local.length === 8 && /^[6-9]/.test(local)) return '55' + ddd + '9' + local; // celular antigo → adiciona 9
+  if (local.length === 8 && /^[2-5]/.test(local)) return null; // fixo → não válido para WA
+  return null;
+}
+
+// Radio groups
+function setupRadio(gid, onchange) {
+  document.querySelectorAll('#'+gid+' .rb').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#'+gid+' .rb').forEach(x => x.classList.remove('on','on-vip'));
+      if (gid === 'rg-vip' && b.dataset.v === 'Sim') b.classList.add('on-vip');
+      else b.classList.add('on');
+      onchange(b.dataset.v);
+    });
+  });
+}
+setupRadio('rg-sexo', v => { sv  = v; pg=1; applyFilters(); });
+setupRadio('rg-vip',  v => { vv  = v; pg=1; applyFilters(); });
+setupRadio('rg-wp',   v => { wv  = v; pg=1; applyFilters(); });
+setupRadio('rg-oo',   v => { oov = v; pg=1; applyFilters(); });
+
+function applyFilters() {
+  const bairro   = document.getElementById('f-bairro').value;
+  const religiao = document.getElementById('f-religiao').value;
+  const material = document.getElementById('f-material').value;
+  const dini     = document.getElementById('f-dini').value;
+  const dfim     = document.getElementById('f-dfim').value;
+  const search   = document.getElementById('f-search').value.toLowerCase().trim();
+  const imin     = parseInt(document.getElementById('f-imin').value) || 0;
+  const imax     = parseInt(document.getElementById('f-imax').value) || 999;
+
+  fil = DATA.filter(r => {
+    if (bairro   && r.bairro   !== bairro)   return false;
+    if (religiao && r.religiao !== religiao)  return false;
+    if (sv       && r.sexo     !== sv)        return false;
+    if (vv       && r.vip      !== vv)        return false;
+    if (material && !r.materiais.includes(material)) return false;
+    if (dini && r.solicitacao_iso && r.solicitacao_iso < dini) return false;
+    if (dfim && r.solicitacao_iso && r.solicitacao_iso > dfim) return false;
+    const age = parseInt(r.idade);
+    if (!isNaN(age) && (age < imin || age > imax)) return false;
+      if (wv === '1' && !normalizePhone(r.telefone) && !normalizePhone(r.telefone2)) return false;
+    if (wv === '0' && (normalizePhone(r.telefone) || normalizePhone(r.telefone2))) return false;
+    if (oov === 'ativo'  &&  r.opt_out) return false;
+    if (oov === 'optout' && !r.opt_out) return false;
+    if (search) {
+      const h = (r.nome+' '+r.email+' '+r.telefone+' '+(r.telefone2||'')+' '+r.materiais.join(' ')).toLowerCase();
+      if (!h.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if (sc) doSort();
+  pg = 1;
+  updStats();
+  updChips();
+  render();
+  // fecha drawer no mobile após filtrar
+  if(window.innerWidth<=768){
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-backdrop').classList.remove('open');
+  }
+}
+
+function updStats() {
+  document.getElementById('hdr-badge').textContent = DATA.length + ' registros';
+  document.getElementById('cnt').textContent = fil.length;
+  document.getElementById('s-f').textContent = fil.filter(r=>r.sexo==='Feminino').length;
+  document.getElementById('s-m').textContent = fil.filter(r=>r.sexo==='Masculino').length;
+  document.getElementById('s-v').textContent = fil.filter(r=>r.vip==='Sim').length;
+  const ages = fil.map(r=>parseInt(r.idade)).filter(x=>!isNaN(x)&&x>0);
+  document.getElementById('s-a').textContent = ages.length
+    ? Math.round(ages.reduce((a,b)=>a+b,0)/ages.length)+'a' : '—';
+  document.getElementById('s-wp').textContent = fil.filter(r=>normalizePhone(r.telefone)||normalizePhone(r.telefone2)).length;
+  document.getElementById('s-oo').textContent = DATA.filter(r=>r.opt_out).length;
+}
+
+function updChips() {
+  const chips = [];
+  const b = document.getElementById('f-bairro').value;
+  const r = document.getElementById('f-religiao').value;
+  const m = document.getElementById('f-material').value;
+  const di = document.getElementById('f-dini').value;
+  const df = document.getElementById('f-dfim').value;
+  const im = document.getElementById('f-imin').value;
+  const ix = document.getElementById('f-imax').value;
+  if (b)  chips.push('📍 '+b);
+  if (r)  chips.push('⛪ '+r);
+  if (sv) chips.push('🧑 '+sv);
+  if (vv) chips.push('⭐ VIP: '+vv);
+  if (m)  chips.push('📦 '+(m.length>30?m.slice(0,30)+'…':m));
+  if (di) chips.push('📅 De: '+di.split('-').reverse().join('/'));
+  if (df) chips.push('📅 Até: '+df.split('-').reverse().join('/'));
+  if (im) chips.push('🎂 Idade ≥ '+im);
+  if (ix) chips.push('🎂 Idade ≤ '+ix);
+  if (wv==='1') chips.push('📱 Apenas WhatsApp válido');
+  if (wv==='0') chips.push('📱 Sem WhatsApp');
+  document.getElementById('af').innerHTML = chips.map(c=>`<div class="afc">${c}</div>`).join('');
+}
+
+function sortBy(col) {
+  if (sc===col) sd*=-1; else {sc=col;sd=1;}
+  document.querySelectorAll('[id^=sn-]').forEach(e=>e.textContent='↕');
+  const el = document.getElementById('sn-'+col);
+  if (el) el.textContent = sd===1?'↑':'↓';
+  doSort(); render();
+}
+function doSort() {
+  fil.sort((a,b)=>{
+    let va=a[sc]||'', vb=b[sc]||'';
+    if (sc==='idade'){va=parseInt(va)||0;vb=parseInt(vb)||0;}
+    return va<vb?-sd:va>vb?sd:0;
+  });
+}
+
+function render() {
+  const tb = document.getElementById('tb');
+  const nr = document.getElementById('no-res');
+  if (!fil.length){tb.innerHTML='';nr.style.display='block';document.getElementById('pi').textContent='0 registros';document.getElementById('pb').innerHTML='';return;}
+  nr.style.display='none';
+  const tp = Math.ceil(fil.length/PS);
+  if (pg>tp) pg=1;
+  const s = (pg-1)*PS;
+  const page = fil.slice(s,s+PS);
+
+  tb.innerHTML = page.map(r=>{
+    const sb = r.sexo==='Feminino'?'bf':r.sexo==='Masculino'?'bm':'bn';
+    const mc = r.materiais.slice(0,3).map(m=>`<span class="mc">${m.slice(0,28)}</span>`).join('');
+    const mm = r.materiais.length>3?`<span class="mc">+${r.materiais.length-3}</span>`:'';
+    const fmtEmail = e => e ? `<a href="mailto:${e}" style="color:#C9A84C;font-size:.73rem;text-decoration:none">${e}</a>` : '<span style="color:rgba(240,237,232,0.25)">—</span>';
+    const fmtPhone = t => {
+      const wp = normalizePhone(t);
+      if (wp) return `<a href="https://wa.me/${wp}" target="_blank" style="color:#2ECC71;font-size:.73rem;text-decoration:none" title="Evolution API: ${wp}">✅ ${wp}</a>`;
+      if (t)  return `<span style="color:#E74C3C;font-size:.73rem" title="Inválido para WhatsApp: ${t.trim()}">❌ ${t.trim()}</span>`;
+      return '<span style="color:rgba(240,237,232,0.25)">—</span>';
+    };
+    const isOO = !!r.opt_out;
+    const safePh = (normalizePhone(r.telefone)||normalizePhone(r.telefone2)||'').replace(/'/g,'');
+    const editBtn = currentList==='novo-tempo'
+      ? `<button class="btn-act btn-edit-row" onclick="openEdit(${r._idx})" title="Editar">✏️</button> `
+      : '';
+    const ooBtn = isOO
+      ? `<button class="btn-act btn-activate-row" onclick="doOptout(${r._idx},'${safePh}',true)" title="Reativar contato">✅</button>`
+      : `<button class="btn-act btn-oo-row" onclick="doOptout(${r._idx},'${safePh}',false)" title="Opt-out">🚫</button>`;
+    const ooLabel = isOO
+      ? ` <span class="boo" title="Opt-out em ${r.opt_out_date||'?'} via ${r.opt_out_source||'?'}">🚫 opt-out</span>`
+      : '';
+    return `<tr class="${isOO?'row-optout':''}">
+      <td><strong>${r.nome}</strong>${ooLabel}</td>
+      <td>${r.bairro||'—'}</td>
+      <td>${r.religiao||'—'}</td>
+      <td><span class="${sb}">${r.sexo}</span></td>
+      <td>${r.idade||'—'}</td>
+      <td>${r.vip==='Sim'?'<span class="bv">⭐ VIP</span>':''}</td>
+      <td>${r.solicitacao||'—'}</td>
+      <td>${mc}${mm}</td>
+      <td>${fmtEmail(r.email)}</td>
+      <td>${fmtPhone(r.telefone)}</td>
+      <td>${fmtPhone(r.telefone2)}</td>
+      <td style="white-space:nowrap">${editBtn}${ooBtn}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('pi').textContent = `Mostrando ${s+1}–${Math.min(s+PS,fil.length)} de ${fil.length}`;
+
+  let ph = `<button class="pb" onclick="gp(${pg-1})" ${pg===1?'disabled':''}>‹</button>`;
+  for(let p=Math.max(1,pg-2);p<=Math.min(tp,pg+2);p++)
+    ph+=`<button class="pb ${p===pg?'on':''}" onclick="gp(${p})">${p}</button>`;
+  ph+=`<button class="pb" onclick="gp(${pg+1})" ${pg===tp?'disabled':''}>›</button>`;
+  document.getElementById('pb').innerHTML = ph;
+}
+
+function gp(p){const tp=Math.ceil(fil.length/PS);if(p<1||p>tp)return;pg=p;render();window.scrollTo({top:0,behavior:'smooth'});}
+
+function resetAll(){
+  document.getElementById('f-bairro').value='';
+  document.getElementById('f-religiao').value='';
+  document.getElementById('f-material').value='';
+  document.getElementById('f-dini').value='';
+  document.getElementById('f-dfim').value='';
+  document.getElementById('f-search').value='';
+  document.getElementById('f-imin').value='';
+  document.getElementById('f-imax').value='';
+  sv='';vv='';wv='';oov='';
+  document.querySelectorAll('#rg-sexo .rb').forEach((b,i)=>{b.classList.remove('on','on-vip');if(i===0)b.classList.add('on');});
+  document.querySelectorAll('#rg-vip .rb').forEach((b,i)=>{b.classList.remove('on','on-vip');if(i===0)b.classList.add('on');});
+  document.querySelectorAll('#rg-wp .rb').forEach((b,i)=>{b.classList.remove('on','on-vip');if(i===0)b.classList.add('on');});
+  document.querySelectorAll('#rg-oo .rb').forEach((b,i)=>{b.classList.remove('on','on-vip');if(i===0)b.classList.add('on');});
+  sc='';sd=1;
+  document.querySelectorAll('[id^=sn-]').forEach(e=>e.textContent='↕');
+  pg=1;
+  applyFilters();
+}
+
+function exportCSV(){
+  let csv='Nome;Bairro;Religião;Sexo;Idade;VIP;Data Solicitação;Materiais;Email;Telefone;Telefone 2;WhatsApp;WhatsApp 2\n';
+  fil.forEach(r=>{
+    const wp  = normalizePhone(r.telefone)  || '';
+    const wp2 = normalizePhone(r.telefone2) || '';
+    const row=[r.nome,r.bairro,r.religiao,r.sexo,r.idade,r.vip,r.solicitacao,r.materiais.join(' | '),r.email,r.telefone,r.telefone2||'',wp,wp2]
+      .map(v=>`"${(v||'').replace(/"/g,'""')}"`);
+    csv+=row.join(';')+'\n';
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`listagem_filtrada_${fil.length}_registros.csv`;
+  a.click();
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-backdrop').classList.toggle('open');
+}
+
+// ── Disparo ───────────────────────────────────────────────────────────────────
+let dispChannel = 'both';
+
+function openDisp() {
+  updateDispPreview();
+  document.getElementById('disp-overlay').classList.remove('hidden');
+  document.getElementById('disp-form').style.display = '';
+  document.getElementById('disp-progress').style.display = 'none';
+  document.getElementById('disp-send').disabled = false;
+}
+function closeDisp() {
+  document.getElementById('disp-overlay').classList.add('hidden');
+}
+document.getElementById('disp-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('disp-overlay')) closeDisp();
+});
+
+function setChannel(el) {
+  document.querySelectorAll('.disp-tab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  dispChannel = el.dataset.ch;
+  document.getElementById('subject-row').style.display =
+    dispChannel === 'whatsapp' ? 'none' : '';
+  updateDispPreview();
+}
+
+function updateDispPreview() {
+  const active = fil.filter(r => !r.opt_out);
+  const excluded = fil.length - active.length;
+  const withEmail = active.filter(r => r.email).length;
+  const withWA    = active.filter(r => normalizePhone(r.telefone) || normalizePhone(r.telefone2)).length;
+  let lines = [`<b>${active.length}</b> contatos ativos`];
+  if (excluded) lines.push(`🚫 <b>${excluded}</b> opt-out <span style="color:rgba(240,237,232,0.35)">(excluídos)</span>`);
+  if (dispChannel !== 'whatsapp') lines.push(`📧 <b>${withEmail}</b> com email`);
+  if (dispChannel !== 'email')    lines.push(`📱 <b>${withWA}</b> com WhatsApp válido`);
+  document.getElementById('disp-preview').innerHTML = lines.join(' &nbsp;·&nbsp; ');
+}
+
+function logLine(cls, text) {
+  const el = document.getElementById('disp-log');
+  el.innerHTML += `<div class="${cls}">${text}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function insertTag(tag) {
+  const el = document.getElementById('disp-msg');
+  const s = el.selectionStart, e = el.selectionEnd;
+  el.value = el.value.slice(0, s) + tag + el.value.slice(e);
+  el.selectionStart = el.selectionEnd = s + tag.length;
+  el.focus();
+}
+
+function openTest() {
+  document.getElementById('disp-form').style.display = 'none';
+  document.getElementById('disp-test').style.display = '';
+  document.getElementById('disp-progress').style.display = 'none';
+}
+function closeTest() {
+  document.getElementById('disp-test').style.display = 'none';
+  document.getElementById('disp-form').style.display = '';
+}
+
+async function sendTest() {
+  const msg     = document.getElementById('disp-msg').value.trim();
+  const subject = document.getElementById('disp-subject').value.trim() || 'Mensagem da Comunidade Ser';
+  const nome    = document.getElementById('test-nome').value.trim() || 'Destinatário Teste';
+  const email   = document.getElementById('test-email').value.trim();
+  const wa      = document.getElementById('test-wa').value.replace(/\D/g,'');
+
+  if (!msg)           { alert('Digite a mensagem antes de testar.'); return; }
+  if (!email && !wa)  { alert('Informe pelo menos um email ou WhatsApp para o teste.'); return; }
+
+  let channel = 'both';
+  if (email && !wa) channel = 'email';
+  if (!email && wa) channel = 'whatsapp';
+
+  document.getElementById('test-send').disabled = true;
+  document.getElementById('test-send').textContent = '⏳ Enviando...';
+
+  const res = await fetch('disparar.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      contacts: [{ nome, email, telefone: wa, telefone2: '' }],
+      channel,
+      subject,
+      message: msg,
+    }),
+  });
+  const job = await res.json();
+  if (job.error) {
+    alert('Erro: ' + job.error);
+    document.getElementById('test-send').disabled = false;
+    document.getElementById('test-send').textContent = '🧪 Enviar teste agora';
+    return;
+  }
+
+  // Mostra progresso
+  document.getElementById('disp-test').style.display = 'none';
+  document.getElementById('disp-progress').style.display = '';
+  document.getElementById('disp-log').innerHTML = '';
+  document.getElementById('disp-pbar').style.width = '0%';
+  document.getElementById('dp-ok').textContent  = '✅ 0 enviados';
+  document.getElementById('dp-err').textContent = '❌ 0 falhas';
+  document.getElementById('dp-info').textContent = '0 / 1 (teste)';
+
+  logLine('inf', `🧪 TESTE — canal: ${channel} | destinatário: ${nome}`);
+
+  let lastEntry = 0, attempts = 0, pollTimer = null;
+
+  async function pollTest() {
+    attempts++;
+    try {
+      const r = await fetch(`disparar.php?status=${job.token}`);
+      const d = await r.json();
+
+      if (d.entries && d.entries.length > lastEntry) {
+        d.entries.slice(lastEntry).forEach(e => {
+          const parts = [];
+          if (e.email)    parts.push(`email:${e.email}`);
+          if (e.whatsapp) parts.push(`wa:${e.whatsapp}`);
+          const ok = parts.length > 0 && parts.every(p => p.endsWith('ok'));
+          logLine(ok ? 'ok' : 'err', `${e.nome} — ${parts.join(' | ') || 'sem canal'}`);
+        });
+        lastEntry = d.entries.length;
+      }
+
+      if (d.status === 'done' || d.status === 'error' || attempts >= 60) {
+        clearInterval(pollTimer);
+        document.getElementById('disp-pbar').style.width = '100%';
+        document.getElementById('dp-ok').textContent  = `✅ ${d.sent} enviados`;
+        document.getElementById('dp-err').textContent = `❌ ${d.failed} falhas`;
+        document.getElementById('dp-info').textContent = '1 / 1 (teste)';
+        logLine('inf', d.sent > 0 ? '✔ Teste enviado com sucesso!' : '✖ Falha no envio do teste.');
+        document.getElementById('test-send').disabled = false;
+        document.getElementById('test-send').textContent = '🧪 Enviar teste agora';
+      }
+    } catch(_) {
+      if (attempts >= 60) {
+        clearInterval(pollTimer);
+        logLine('err', 'Timeout ao aguardar resposta do teste.');
+        document.getElementById('test-send').disabled = false;
+        document.getElementById('test-send').textContent = '🧪 Enviar teste agora';
+      }
+    }
+  }
+
+  pollTest();
+  pollTimer = setInterval(pollTest, 5000);
+}
+
+async function startDispatch() {
+  const msg = document.getElementById('disp-msg').value.trim();
+  if (!msg) { alert('Digite a mensagem.'); return; }
+
+  const contacts = fil
+    .filter(r => !r.opt_out)
+    .map(r => ({ nome: r.nome, email: r.email||'', telefone: r.telefone||'', telefone2: r.telefone2||'' }));
+
+  document.getElementById('disp-send').disabled = true;
+
+  // Enfileira job
+  const res = await fetch('disparar.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      contacts,
+      channel: dispChannel,
+      subject: document.getElementById('disp-subject').value.trim() || 'Mensagem da Comunidade Ser',
+      message: msg,
+    }),
+  });
+  const job = await res.json();
+  if (job.error) { alert(job.error); document.getElementById('disp-send').disabled = false; return; }
+
+  // Mostra progresso
+  document.getElementById('disp-form').style.display = 'none';
+  document.getElementById('disp-progress').style.display = '';
+  document.getElementById('disp-log').innerHTML = '';
+  document.getElementById('disp-pbar').style.width = '0%';
+  document.getElementById('dp-ok').textContent  = '✅ 0 enviados';
+  document.getElementById('dp-err').textContent = '❌ 0 falhas';
+  document.getElementById('dp-info').textContent = `0 / ${job.total}`;
+
+  logLine('inf', `▶ Disparo iniciado para ${job.total} contatos via ${dispChannel}. O envio continua no servidor mesmo com o browser fechado. Atualizando a cada 1 minuto...`);
+  toast(`📤 Disparo iniciado para ${job.total} contatos`, 'info', 4000);
+
+  let lastEntry = 0, pollTimer = null;
+
+  async function poll() {
+    try {
+      const r = await fetch(`disparar.php?status=${job.token}`);
+      const d = await r.json();
+
+      const pct = d.total > 0 ? Math.round((d.processed / d.total) * 100) : 0;
+      document.getElementById('disp-pbar').style.width = pct + '%';
+      document.getElementById('dp-ok').textContent  = `✅ ${d.sent} enviados`;
+      document.getElementById('dp-err').textContent = `❌ ${d.failed} falhas`;
+      document.getElementById('dp-info').textContent = `${d.processed} / ${d.total}`;
+
+      // Renderiza apenas as novas entradas de log
+      if (d.entries && d.entries.length > lastEntry) {
+        d.entries.slice(lastEntry).forEach((e, idx) => {
+          const n = lastEntry + idx + 1;
+          const parts = [];
+          if (e.email)    parts.push(`email:${e.email}`);
+          if (e.whatsapp) parts.push(`wa:${e.whatsapp}`);
+          const ok = parts.length > 0 && parts.every(p => p.endsWith('ok'));
+          logLine(ok ? 'ok' : 'err', `[${n}/${d.total}] ${e.nome} — ${parts.join(' | ') || 'sem canal'}`);
+        });
+        lastEntry = d.entries.length;
+      }
+
+      if (d.status === 'done') {
+        clearInterval(pollTimer);
+        logLine('inf', `✔ Concluído: ${d.sent} enviados, ${d.failed} falhas de ${d.total} contatos.`);
+        document.getElementById('disp-pbar').style.width = '100%';
+        toast(`✅ Disparo concluído: ${d.sent} enviados, ${d.failed} falhas`, 'ok', 5000);
+        const failedEntries = (d.entries||[]).filter(e =>
+          (!e.email && !e.whatsapp) ||
+          (e.email && e.email !== 'ok') ||
+          (e.whatsapp && e.whatsapp !== 'ok')
+        );
+        if (failedEntries.length) showRepair(failedEntries);
+      } else if (d.status === 'error') {
+        clearInterval(pollTimer);
+        logLine('err', 'Erro no processamento do disparo.');
+      }
+    } catch(_) {
+      logLine('err', 'Erro ao consultar status. Tentando novamente em 1 minuto...');
+    }
+  }
+
+  poll(); // Poll imediato ao iniciar
+  pollTimer = setInterval(poll, 60000);
+}
+
+// ── Seletor de lista ─────────────────────────────────────────────────────────
+const LISTS = {
+  'novo-tempo':       { label: 'Novo Tempo',       src: 'novo-tempo.json',       type: 'json' },
+  transmissao:        { label: 'Transmissão',      src: 'transmissao.php',        type: 'php'  },
+  'conectados-run':   { label: 'Conectados Run',   src: 'conectados-run.php',     type: 'php'  },
+};
+let currentList = 'novo-tempo';
+
+function switchList(el) {
+  const id = el.dataset.list;
+  if (id === currentList) return;
+  document.querySelectorAll('.ls-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  currentList = id;
+  loadList(id);
+}
+
+function loadList(id) {
+  const cfg = LISTS[id];
+  document.getElementById('list-name').textContent = cfg.label;
+  document.body.classList.toggle('list-novo-tempo', id !== 'novo-tempo');
+  document.body.classList.add('list-loading');
+  DATA = []; fil = [];
+  applyFilters();
+
+  fetch(cfg.src)
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      DATA = data.map((r, i) => ({...r, _idx: i}));
+      fil  = [...DATA];
+      document.getElementById('hdr-badge').textContent = DATA.length + ' registros';
+      document.body.classList.remove('list-loading');
+      resetAll();
+      toast(`📋 Lista "${cfg.label}" carregada — ${DATA.length} registros`, 'info', 3000);
+    })
+    .catch(err => {
+      document.body.classList.remove('list-loading');
+      document.getElementById('list-loading').textContent = '⚠ Erro ao carregar: ' + err.message;
+      document.getElementById('list-loading').style.display = 'block';
+      toast('⚠ Erro ao carregar lista: ' + err.message, 'err', 5000);
+    });
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────────
+function toast(msg, type='info', duration=3500) {
+  const wrap = document.getElementById('toast-wrap');
+  const el   = document.createElement('div');
+  el.className = `toast t-${type}`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 350);
+  }, duration);
+}
+
+// ── Editar registro ────────────────────────────────────────────────────────────
+function openEdit(idx) {
+  const r = DATA.find(x => x._idx === idx);
+  if (!r) return;
+  editIdx = idx;
+  document.getElementById('ef-nome').value     = r.nome      || '';
+  document.getElementById('ef-sexo').value     = r.sexo      || 'Não Informado';
+  document.getElementById('ef-tel').value      = r.telefone  || '';
+  document.getElementById('ef-tel2').value     = r.telefone2 || '';
+  document.getElementById('ef-email').value    = r.email     || '';
+  document.getElementById('ef-email2').value   = r.email2    || '';
+  document.getElementById('ef-bairro').value   = r.bairro    || '';
+  document.getElementById('ef-religiao').value = r.religiao  || '';
+  document.getElementById('ef-idade').value    = r.idade     || '';
+  document.getElementById('ef-vip').value      = r.vip       || 'Não';
+  document.getElementById('edit-overlay').classList.remove('hidden');
+}
+function closeEdit() {
+  document.getElementById('edit-overlay').classList.add('hidden');
+}
+document.getElementById('edit-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('edit-overlay')) closeEdit();
+});
+
+async function saveEdit() {
+  const fields = {
+    nome:      document.getElementById('ef-nome').value.trim(),
+    sexo:      document.getElementById('ef-sexo').value,
+    telefone:  document.getElementById('ef-tel').value.trim(),
+    telefone2: document.getElementById('ef-tel2').value.trim(),
+    email:     document.getElementById('ef-email').value.trim(),
+    email2:    document.getElementById('ef-email2').value.trim(),
+    bairro:    document.getElementById('ef-bairro').value.trim(),
+    religiao:  document.getElementById('ef-religiao').value.trim(),
+    idade:     document.getElementById('ef-idade').value.trim(),
+    vip:       document.getElementById('ef-vip').value,
+  };
+  const btn = document.getElementById('edit-save');
+  btn.disabled = true;
+  btn.textContent = '⏳ Salvando...';
+  const res  = await fetch('api.php?action=update', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({idx: editIdx, fields}),
+  });
+  const json = await res.json();
+  btn.disabled = false;
+  btn.textContent = '💾 Salvar alterações';
+  if (json.error) { toast('❌ ' + json.error, 'err'); return; }
+  const i = DATA.findIndex(x => x._idx === editIdx);
+  if (i >= 0) Object.assign(DATA[i], fields);
+  applyFilters();
+  closeEdit();
+  toast('✅ Registro atualizado com sucesso', 'ok');
+}
+
+// ── Opt-out / Reativar ─────────────────────────────────────────────────────────
+async function doOptout(idx, phone, activate) {
+  const action  = activate ? 'activate' : 'optout';
+  const payload = currentList === 'novo-tempo'
+    ? (activate ? {idx} : {idx})
+    : {phone};
+  const res  = await fetch(`api.php?action=${action}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json();
+  if (!json.ok) { toast('❌ ' + (json.error||'Erro ao salvar'), 'err'); return; }
+  const i = DATA.findIndex(x => x._idx === idx);
+  if (i >= 0) {
+    DATA[i].opt_out        = !activate;
+    DATA[i].opt_out_date   = activate ? null : new Date().toISOString().slice(0,19).replace('T',' ');
+    DATA[i].opt_out_source = activate ? null : 'manual';
+  }
+  applyFilters();
+  toast(activate ? '✅ Contato reativado' : '🚫 Contato marcado como opt-out', activate ? 'ok' : 'warn');
+}
+
+// ── Histórico de disparos ──────────────────────────────────────────────────────
+function openHistory() {
+  document.getElementById('hist-overlay').classList.remove('hidden');
+  loadHistory();
+}
+function closeHistory() {
+  document.getElementById('hist-overlay').classList.add('hidden');
+}
+document.getElementById('hist-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('hist-overlay')) closeHistory();
+});
+
+async function loadHistory() {
+  const body = document.getElementById('hist-body');
+  body.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(240,237,232,0.45)">⏳ Carregando...</div>';
+  const res  = await fetch('api.php?action=history');
+  const list = await res.json();
+  if (!list.length) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(240,237,232,0.35)">Nenhum disparo encontrado.</div>';
+    return;
+  }
+  const chLabel = c => ({'both':'📧+📱 Ambos','email':'📧 Email','whatsapp':'📱 WhatsApp'}[c]||c);
+  body.innerHTML = list.map((d, i) => {
+    const stCls = {'done':'done','running':'running','error':'error'}[d.status]||'unknown';
+    const stLbl = {'done':'✔ Concluído','running':'⏳ Em andamento','error':'✖ Erro','unknown':'?'}[d.status]||d.status;
+    const pct   = d.total > 0 ? Math.round(d.processed/d.total*100) : 0;
+    return `<div class="hi" onclick="toggleHistDetail('${d.token}',${i})">
+      <div class="hi-top">
+        <span class="hi-date">${d.started_at||'—'}</span>
+        <span class="hi-ch">${chLabel(d.channel)}</span>
+        <span class="hi-st ${stCls}">${stLbl}</span>
+      </div>
+      <div class="hi-nums">
+        <span class="hi-ok2">✅ ${d.sent} enviados</span>
+        <span class="hi-err2">❌ ${d.failed} falhas</span>
+        <span class="hi-tot2">${d.total} total &nbsp;${pct}%</span>
+        ${d.finished_at?`<span class="hi-tot2">Fim: ${d.finished_at}</span>`:''}
+      </div>
+    </div>
+    <div class="hi-detail" id="hd-${i}"></div>`;
+  }).join('');
+}
+
+async function toggleHistDetail(token, i) {
+  const el = document.getElementById('hd-' + i);
+  if (!el.classList.toggle('open')) return;
+  el.innerHTML = '<div style="padding:8px;color:rgba(240,237,232,0.45);font-size:.75rem">⏳ Carregando log...</div>';
+  const res = await fetch(`api.php?action=log&token=${token}`);
+  const d   = await res.json();
+  const entries = (d.entries||[]).slice(-150);
+  const rows = entries.map(e => {
+    const parts = [];
+    if (e.email)    parts.push(`email:${e.email}`);
+    if (e.whatsapp) parts.push(`wa:${e.whatsapp}`);
+    const ok = parts.length > 0 && parts.every(p => p.endsWith('ok'));
+    return `<div class="${ok?'ok':'err'}">${e.nome} — ${parts.join(' | ')||'sem canal'} <span style="color:rgba(240,237,232,0.45)">${e.time||''}</span></div>`;
+  }).join('');
+  el.innerHTML = `<div style="display:flex;gap:14px;font-size:.75rem;margin-bottom:8px;flex-wrap:wrap">
+    <span style="color:#2ECC71;font-weight:700">✅ ${d.sent} enviados</span>
+    <span style="color:#E74C3C;font-weight:700">❌ ${d.failed} falhas</span>
+    <span style="color:rgba(240,237,232,0.45)">${d.total} total</span>
+    <span style="color:rgba(240,237,232,0.45)">Início: ${d.started_at||'—'} &nbsp; Fim: ${d.finished_at||'—'}</span>
+  </div>
+  <div class="hi-dlog">${rows||'<span style="color:rgba(240,237,232,0.45)">Sem entradas registradas</span>'}</div>`;
+}
+
+// ── Reparar contatos com falha ─────────────────────────────────────────────────
+function showRepair(failedEntries) {
+  const wrap = document.getElementById('repair-wrap');
+  const list = document.getElementById('repair-list');
+  document.getElementById('repair-count').textContent = `(${failedEntries.length})`;
+
+  list.innerHTML = failedEntries.map(e => {
+    const record = DATA.find(r => r.nome === e.nome);
+    const idx    = record ? record._idx : -1;
+    const phone  = record ? (normalizePhone(record.telefone)||normalizePhone(record.telefone2)||'') : '';
+    const parts  = [];
+    if (e.email    && e.email    !== 'ok') parts.push(`📧 ${e.email}`);
+    if (e.whatsapp && e.whatsapp !== 'ok') parts.push(`📱 ${e.whatsapp}`);
+    const errText = parts.join(' · ') || 'sem canal configurado';
+
+    const editBtnHtml = idx >= 0 && currentList === 'novo-tempo'
+      ? `<button class="btn-act btn-edit-row" style="font-size:.68rem" onclick="closeDisp();openEdit(${idx})">✏️ Editar</button>`
+      : '';
+    const ooBtnHtml = idx >= 0
+      ? `<button class="btn-act btn-oo-row" style="font-size:.68rem" onclick="doOptout(${idx},'${phone.replace(/'/g,'')}',false);this.closest('.rp-row').remove()">🚫 Opt-out</button>`
+      : '';
+
+    return `<div class="rp-row">
+      <span class="rp-name">${e.nome}</span>
+      <span class="rp-err">${errText.slice(0,50)}</span>
+      ${editBtnHtml} ${ooBtnHtml}
+    </div>`;
+  }).join('');
+
+  wrap.style.display = 'block';
+  list.style.display = 'none'; // começa colapsado
+}
+
+// ── Init
+loadList('novo-tempo');
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Logs
+*.log
+error_log
+
+# PHP sessions e cache
+/tmp/
+*.cache
+
+# WordPress (gerenciado separadamente)
+wp-content/
+
+# Configurações privadas do host
+.private/
+
+# Credenciais e env
+.env
+*.env
+config.local.php
+
+# OS
+.DS_Store
+Thumbs.db

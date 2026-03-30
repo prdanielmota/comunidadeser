@@ -1,0 +1,10 @@
+# Bloqueia acesso direto aos arquivos de dados e lock
+<FilesMatch "^cadastros\.(json|json\.lock)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# /admin → dashboard.php  |  /checkin → checkin.php
+RewriteEngine On
+RewriteRule ^admin/?$ dashboard.php [L,QSA]
+RewriteRule ^checkin/?$ checkin.php [L,QSA]

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//home/u566113111/domains/comunidadeser.com/**)",
+      "Read(//etc/nginx/**)",
+      "WebFetch(domain:drive.google.com)",
+      "WebFetch(domain:lh3.googleusercontent.com)"
+    ]
+  }
+}

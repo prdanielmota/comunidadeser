@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Semana Santa 2026 · O Drama da Paixão · Comunidade SER</title>
+  <meta name="description" content="Viva o Drama da Paixão na Semana Santa 2026 com a Comunidade SER. De 28 de março a 04 de abril, em Manaus-AM. Entrada gratuita." />
+
+  <!-- Open Graph / WhatsApp Preview -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Semana Santa 2026 · O Drama da Paixão" />
+  <meta property="og:description" content="Essa história mudou o mundo, e agora pode mudar a sua vida! De 28 de março a 04 de abril de 2026 · Entrada Gratuita · Comunidade SER, Manaus-AM" />
+  <meta property="og:image" content="/og-image.jpg" />
+  <meta property="og:locale" content="pt_BR" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Semana Santa 2026 · O Drama da Paixão" />
+  <meta name="twitter:description" content="Essa história mudou o mundo, e agora pode mudar a sua vida! Entrada Gratuita · Comunidade SER" />
+  <meta name="twitter:image" content="/og-image.jpg" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --coral:      #E84B2A;
+      --coral-dark: #C73D20;
+      --gold:       #C8963E;
+      --gold-light: #E8B96A;
+      --cream:      #FEF5EC;
+      --cream-mid:  #FAD5B0;
+      --peach:      #F5A87B;
+      --white:      #FFFDF9;
+      --text-dark:  #2A1810;
+      --text-mid:   #6B3D28;
+      --text-light: #A07060;
+      --whatsapp:   #25D366;
+      --whatsapp-dark: #1DA851;
+      --waze:       #33CCFF;
+      --waze-dark:  #00AADD;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      background: linear-gradient(
+        180deg,
+        #F59A6A 0%,
+        #F5B88A 15%,
+        #FAD0A0 32%,
+        #FDE8C8 52%,
+        #FEF5EC 72%,
+        #FFFDF9 100%
+      );
+      background-attachment: fixed;
+      min-height: 100vh;
+      color: var(--text-dark);
+      overflow-x: hidden;
+      padding-bottom: 90px; /* space for fixed CTA */
+    }
+
+    /* ─── Light Ray Decoration ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -10%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160%;
+      height: 55%;
+      background: radial-gradient(
+        ellipse at 50% 0%,
+        rgba(255, 210, 140, 0.35) 0%,
+        rgba(255, 180, 100, 0.15) 35%,
+        transparent 70%
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Animations ─── */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(22px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes shimmer {
+      0%, 100% { opacity: 0.6; }
+      50%       { opacity: 1; }
+    }
+
+    .anim-1  { animation: fadeInUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.10s both; }
+    .anim-2  { animation: fadeInUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
+    .anim-3  { animation: fadeInUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.40s both; }
+    .anim-4  { animation: fadeInUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both; }
+    .anim-5  { animation: fadeInUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.70s both; }
+    .anim-6  { animation: fadeInUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.85s both; }
+    .anim-7  { animation: fadeInUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 1.00s both; }
+    .anim-8  { animation: fadeInUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 1.15s both; }
+    .anim-9  { animation: fadeIn   0.90s ease                            1.30s both; }
+
+    /* ─── Page Container ─── */
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ─── 1. Header / Logo ─── */
+    .header {
+      padding-top: 44px;
+      text-align: center;
+    }
+
+    .logo-img {
+      display: block;
+      max-width: 100px;
+      width: 30%;
+      height: auto;
+      margin: 0 auto;
+    }
+
+    /* ─── Thin gold divider ─── */
+    .divider {
+      display: block;
+      width: 48px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 18px auto 0;
+      opacity: 0.8;
+    }
+
+    /* ─── 2. Event Label ─── */
+    .event-label {
+      margin-top: 36px;
+      text-align: center;
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      font-size: 11px;
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+      color: var(--text-light);
+    }
+
+    /* ─── 3. Hero Title ─── */
+    .hero {
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .hero-pre {
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      font-size: 14px;
+      letter-spacing: 0.16em;
+      color: var(--text-mid);
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-weight: 900;
+      font-size: clamp(72px, 22vw, 108px);
+      line-height: 0.92;
+      color: var(--coral);
+      letter-spacing: -0.02em;
+      display: block;
+      /* Subtle text shadow for depth */
+      text-shadow:
+        0 2px 12px rgba(232, 75, 42, 0.18),
+        0 8px 32px rgba(232, 75, 42, 0.10);
+    }
+
+    /* ─── 4. Subtitle ─── */
+    .subtitle {
+      margin-top: 18px;
+      text-align: center;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--text-mid);
+      padding: 0 8px;
+    }
+
+    /* ─── Video ─── */
+    .video-wrap {
+      margin-top: 28px;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow:
+        0 4px 24px rgba(180, 100, 40, 0.15),
+        0 1px 0 rgba(255,255,255,0.6) inset;
+      border: 1px solid rgba(200, 150, 62, 0.20);
+      background: #000;
+      line-height: 0;
+    }
+
+    .video-wrap video {
+      width: 100%;
+      display: block;
+      border-radius: 18px;
+    }
+
+    /* ─── 5. Guest Card ─── */
+    .guest-card {
+      margin-top: 32px;
+      background: rgba(255, 253, 249, 0.70);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(200, 150, 62, 0.22);
+      border-radius: 20px;
+      padding: 24px 20px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      box-shadow:
+        0 2px 16px rgba(180, 100, 40, 0.08),
+        0 8px 40px rgba(180, 100, 40, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .guest-avatar {
+      flex-shrink: 0;
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--coral) 0%, var(--gold) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 22px;
+      color: white;
+      letter-spacing: 0.04em;
+      box-shadow:
+        0 4px 16px rgba(232, 75, 42, 0.30),
+        0 0 0 3px rgba(255, 253, 249, 1),
+        0 0 0 4px rgba(200, 150, 62, 0.25);
+    }
+
+    .guest-info {
+      flex: 1;
+    }
+
+    .guest-label {
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+      font-size: 9.5px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    .guest-name {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text-dark);
+      line-height: 1.2;
+    }
+
+    .guest-role {
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      font-size: 12px;
+      color: var(--text-light);
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+
+    /* ─── 6. Dates ─── */
+    .dates-block {
+      margin-top: 28px;
+      background: rgba(255, 253, 249, 0.55);
+      border: 1px solid rgba(200, 150, 62, 0.18);
+      border-radius: 16px;
+      padding: 20px 22px;
+      box-shadow: 0 2px 12px rgba(180, 100, 40, 0.06);
+    }
+
+    .dates-main {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .calendar-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+      width: 36px;
+      height: 36px;
+      background: var(--coral);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 12px rgba(232, 75, 42, 0.28);
+    }
+
+    .calendar-icon svg {
+      width: 18px;
+      height: 18px;
+      fill: white;
+    }
+
+    .dates-info {
+      flex: 1;
+    }
+
+    .dates-range {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text-dark);
+      line-height: 1.3;
+    }
+
+    .dates-divider {
+      display: block;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(200, 150, 62, 0.3), transparent);
+      margin: 14px 0;
+    }
+
+    .schedule-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .schedule-item {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .schedule-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--gold);
+      flex-shrink: 0;
+      margin-bottom: 1px;
+      align-self: center;
+    }
+
+    .schedule-date {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 12px;
+      color: var(--text-mid);
+      min-width: 88px;
+    }
+
+    .schedule-time {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--coral);
+    }
+
+    /* ─── 7. Free Entry Badge ─── */
+    .badge-row {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .badge-free {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(39, 174, 96, 0.12);
+      border: 1.5px solid rgba(39, 174, 96, 0.35);
+      border-radius: 50px;
+      padding: 9px 20px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 13px;
+      color: #1A8A4A;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-check {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      background: rgba(39, 174, 96, 0.20);
+      border-radius: 50%;
+      font-size: 11px;
+    }
+
+    /* ─── 8. Location ─── */
+    .location-section {
+      margin-top: 32px;
+    }
+
+    .section-label {
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+      font-size: 10px;
+      letter-spacing: 0.36em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .map-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .map-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 12px;
+      border-radius: 16px;
+      text-decoration: none;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 13px;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .map-btn:active {
+      transform: scale(0.96);
+    }
+
+    .map-btn-waze {
+      background: linear-gradient(145deg, #33CCFF 0%, #00AADD 100%);
+      color: white;
+      box-shadow: 0 4px 18px rgba(0, 170, 221, 0.30);
+    }
+
+    .map-btn-google {
+      background: white;
+      color: #3C4043;
+      border: 1.5px solid rgba(0, 0, 0, 0.10);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .map-btn svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .map-btn span {
+      letter-spacing: 0.01em;
+    }
+
+    /* ─── 9. Fixed WhatsApp CTA ─── */
+    .cta-fixed {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 999;
+      padding: 12px 20px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      background: linear-gradient(180deg, transparent 0%, rgba(254, 245, 236, 0.95) 30%);
+    }
+
+    .cta-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 11px;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 17px 24px;
+      background: linear-gradient(135deg, #28D96B 0%, var(--whatsapp) 50%, #20C05A 100%);
+      border-radius: 16px;
+      text-decoration: none;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 15px;
+      letter-spacing: 0.01em;
+      box-shadow:
+        0 4px 20px rgba(37, 211, 102, 0.40),
+        0 1px 0 rgba(255,255,255,0.15) inset;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .cta-btn:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 12px rgba(37, 211, 102, 0.35);
+    }
+
+    .cta-btn svg {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .cta-separator {
+      width: 1px;
+      height: 16px;
+      background: rgba(255,255,255,0.35);
+    }
+
+    /* ─── 10. Footer ─── */
+    .footer {
+      margin-top: 40px;
+      padding-bottom: 12px;
+      text-align: center;
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      font-size: 11px;
+      color: var(--text-light);
+      letter-spacing: 0.05em;
+    }
+
+    .footer-dot {
+      margin: 0 6px;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- 1. Logo -->
+    <header class="header anim-1">
+      <img
+        src="https://lh3.googleusercontent.com/d/1VcGyn2oh2jnt79nMztNc_eRDdEmZDkIC"
+        alt="Comunidade SER"
+        class="logo-img"
+      />
+      <span class="divider"></span>
+    </header>
+
+    <!-- 2. Event Label -->
+    <p class="event-label anim-2">Semana Santa 2026</p>
+
+    <!-- 3. Hero Title -->
+    <div class="hero anim-3">
+      <span class="hero-pre">O Drama da</span>
+      <span class="hero-title">Paixão</span>
+    </div>
+
+    <!-- 4. Subtitle -->
+    <p class="subtitle anim-4">
+      "Essa história mudou o mundo,<br>e agora pode mudar a sua vida!"
+    </p>
+
+    <!-- Video -->
+    <div class="video-wrap anim-5">
+      <video
+        controls
+        playsinline
+        preload="metadata"
+        poster=""
+      >
+        <source src="ss26.mp4" type="video/mp4" />
+      </video>
+    </div>
+
+    <!-- 5. Guest Card -->
+    <div class="guest-card anim-6">
+      <div class="guest-avatar">GB</div>
+      <div class="guest-info">
+        <span class="guest-label">Convidado Especial</span>
+        <div class="guest-name">Pr. Gilmar Batistoti</div>
+        <div class="guest-role">Conselheiro Espiritual<br>Escola Bíblica Novo Tempo</div>
+      </div>
+    </div>
+
+    <!-- 6. Dates -->
+    <div class="dates-block anim-7">
+      <div class="dates-main">
+        <div class="calendar-icon">
+          <!-- Calendar SVG -->
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17 2v2H7V2H5v2H3a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2V2h-2zm3 7H4V6h2v1h2V6h10v1h2V6h2v3zM4 11h16v9H4v-9z"/>
+          </svg>
+        </div>
+        <div class="dates-info">
+          <div class="dates-range">28 de março<br>a 04 de abril de 2026</div>
+          <span class="dates-divider"></span>
+          <div class="schedule-row">
+            <div class="schedule-item">
+              <span class="schedule-dot"></span>
+              <span class="schedule-date">28/03 e 04/04</span>
+              <span class="schedule-time">10h30</span>
+            </div>
+            <div class="schedule-item">
+              <span class="schedule-dot"></span>
+              <span class="schedule-date">29/03 à 03/04</span>
+              <span class="schedule-time">19h30</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Free Entry Badge -->
+    <div class="badge-row anim-8">
+      <div class="badge-free">
+        <span class="badge-check">✓</span>
+        Entrada Gratuita
+      </div>
+    </div>
+
+    <!-- 8. Location -->
+    <div class="location-section anim-9">
+      <p class="section-label">Como chegar</p>
+      <div class="map-buttons">
+
+        <!-- Waze -->
+        <a href="https://waze.com/ul/h6xmq6mqy7" target="_blank" rel="noopener noreferrer" class="map-btn map-btn-waze">
+          <!-- Waze icon -->
+          <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="white">
+            <path d="M24 4C13 4 4 12.5 4 23c0 5.7 2.5 10.8 6.5 14.4l-1 5.7 5.5-2.8c2.7.9 5.6 1.4 8.6 1.4 11.6 0 20-8.5 20-19.7C44 12.5 35 4 24 4zm.5 29.4c-1.2 0-2.2-1-2.2-2.2s1-2.2 2.2-2.2 2.2 1 2.2 2.2-1 2.2-2.2 2.2zm-8 0c-1.2 0-2.2-1-2.2-2.2s1-2.2 2.2-2.2 2.2 1 2.2 2.2-1 2.2-2.2 2.2zm11.5-9.4c-1 4.5-5 7.6-9.5 7.6-4.4 0-8.3-3-9.4-7.3H10v-1.5c0-1 .2-1.9.5-2.8-.5-1-.8-2-.8-3.1 0-4.1 3.4-7.5 7.5-7.5 2.4 0 4.5 1.1 5.9 2.8.8-.2 1.6-.3 2.4-.3 5.5 0 10 4.5 10 10v2h-1.5c-.1 0-.1.1-.1.1z"/>
+          </svg>
+          <span>Waze</span>
+        </a>
+
+        <!-- Google Maps -->
+        <a href="https://maps.app.goo.gl/iCb7nqCUC8kJzztF8?g_st=ic" target="_blank" rel="noopener noreferrer" class="map-btn map-btn-google">
+          <!-- Google Maps pin icon -->
+          <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#34A853" d="M24 44s-14-13.4-14-22c0-7.7 6.3-14 14-14s14 6.3 14 14c0 8.6-14 22-14 22z"/>
+            <path fill="#4285F4" d="M10 22c0-7.7 6.3-14 14-14V4C13.4 4 4 13.4 4 24l6-2z"/>
+            <path fill="#FBBC05" d="M4 24c0 5.5 2.5 10.4 6.5 13.7L16 32c-2.4-2.1-4-5.2-4-8.3L4 24z"/>
+            <path fill="#EA4335" d="M38 22c0-7.7-6.3-14-14-14v4c5.5 0 10 4.5 10 10h4z"/>
+            <circle fill="white" cx="24" cy="22" r="5"/>
+          </svg>
+          <span>Maps</span>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- 10. Footer -->
+    <footer class="footer anim-9">
+      © 2026 Comunidade SER<span class="footer-dot">·</span>Manaus, AM
+    </footer>
+
+  </div>
+
+  <!-- 9. Fixed WhatsApp CTA -->
+  <div class="cta-fixed anim-9">
+    <a
+      href="https://chat.whatsapp.com/BR5OgWpwSBtBEPPVyu4QgT?mode=gi_t"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="cta-btn"
+    >
+      <!-- WhatsApp SVG -->
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="white">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      <span>Entrar no Grupo</span>
+      <span class="cta-separator"></span>
+      <span>Semana Santa</span>
+    </a>
+  </div>
+
+</body>
+</html>
