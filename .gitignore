@@ -20,10 +20,9 @@ dashboard/users.json
 envios/*.json
 envios/*.xlsx
 
-# Mantém as configurações do Claude (se desejar)
-!.claude/settings.local.json
-!amigos/.claude/settings.local.json
-!envios/.claude/settings.local.json
+# Claude e Configurações de IA
+.claude/
+*/.claude/
 
 # PHP sessions e cache
 /tmp/
