@@ -1,6 +1,29 @@
 # Logs
 *.log
 error_log
+.logs/
+.jobs/
+app/.logs/
+amigos/.logs/
+envios/.logs/
+envios/.jobs/
+
+# Dados Sensíveis (JSON e Planilhas)
+*.json
+*.json.lock
+*.xlsx
+*.xls
+*.csv
+amigos/cadastros.json
+amigos/eventos.json
+dashboard/users.json
+envios/*.json
+envios/*.xlsx
+
+# Mantém as configurações do Claude (se desejar)
+!.claude/settings.local.json
+!amigos/.claude/settings.local.json
+!envios/.claude/settings.local.json
 
 # PHP sessions e cache
 /tmp/
