@@ -71,6 +71,12 @@ foreach ($contacts as $i => $c) {
     if (in_array($channel, ['whatsapp', 'both'], true)) {
         $wp = normalize_phone($c['telefone'] ?? '') ?? normalize_phone($c['telefone2'] ?? '');
         if ($wp) {
+            // Simular "digitando..."
+            send_presence($wp, 'composing');
+
+            // Aguarda o delay (tempo de digitação)
+            usleep(rand(WA_DELAY_MIN, WA_DELAY_MAX) * 100000);
+
             $result = send_whatsapp($wp, $msg_p);
             $entry['whatsapp'] = $result === true ? 'ok' : $result;
             if ($result === true) $anyOk = true;
@@ -78,8 +84,6 @@ foreach ($contacts as $i => $c) {
 
             if ($waCount % WA_BATCH_SIZE === 0) {
                 sleep(WA_BATCH_WAIT);
-            } else {
-                usleep(rand(WA_DELAY_MIN, WA_DELAY_MAX) * 10000);
             }
         }
     }
@@ -128,6 +132,27 @@ function send_email(string $to, string $name, string $subject, string $body): bo
     } catch (Throwable $e) {
         return $e->getMessage();
     }
+}
+
+// ── Simular presença (digitando...) ──────────────────────────────────────────
+function send_presence(string $number, string $presence): void {
+    if (!defined('EVO_KEY') || !EVO_KEY) return;
+    $url = EVO_URL . '/instance/setPresence/' . EVO_INST;
+    $ch  = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 5,
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/json',
+            'apikey: ' . EVO_KEY,
+        ],
+        CURLOPT_POSTFIELDS => json_encode([
+            'presence' => $presence,
+        ]),
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
 }
 
 // ── Envio WhatsApp via Evolution API ─────────────────────────────────────────
