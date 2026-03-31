@@ -1142,7 +1142,7 @@ body{margin:0;padding:0}
                 <label>Instância WhatsApp (Evolution)</label>
                 <select id="env-disp-instance" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.5rem .7rem;color:var(--text);font-size:.82rem;font-family:inherit;outline:none">
                   <option value="random">Aleatório (Balanço de Carga)</option>
-                  <?php foreach (EVO_INSTANCES as $inst): ?>
+                  <?php foreach (SER_EVO_INSTANCES as $inst): ?>
                   <option value="<?= esc($inst) ?>"><?= esc($inst) ?></option>
                   <?php endforeach; ?>
                 </select>
