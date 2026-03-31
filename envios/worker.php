@@ -7,15 +7,15 @@ if (file_exists(__DIR__ . '/../app/env_loader.php')) {
     require_once __DIR__ . '/../app/env_loader.php';
 }
 
-const GMAIL_USER  = 'contato@comunidadeser.com';
-const GMAIL_PASS  = defined('GMAIL_PASS') ? constant('GMAIL_PASS') : '';
-const GMAIL_NAME  = 'Comunidade Ser';
-const GMAIL_HOST  = 'smtp.gmail.com';
-const GMAIL_PORT  = 587;
+define('GMAIL_USER',  'contato@comunidadeser.com');
+define('GMAIL_PASS',  defined('GMAIL_PASS') ? constant('GMAIL_PASS') : '');
+define('GMAIL_NAME',  'Comunidade Ser');
+define('GMAIL_HOST',  'smtp.gmail.com');
+define('GMAIL_PORT',  587);
 
-const EVO_URL     = 'https://evolution.osmota.org';
-const EVO_KEY     = defined('EVO_KEY') ? constant('EVO_KEY') : '';
-const EVO_INST    = 'ComunidadeSer';
+define('EVO_URL',     'https://evolution.osmota.org');
+define('EVO_KEY',     defined('EVO_KEY') ? constant('EVO_KEY') : '');
+define('EVO_INST',    'ComunidadeSer');
 
 const EMAIL_DELAY_MIN  = 50;
 const EMAIL_DELAY_MAX  = 100;
@@ -40,12 +40,14 @@ if (!file_exists($jobFile)) exit(1);
 $job = json_decode(file_get_contents($jobFile), true);
 unlink($jobFile);
 
-$contacts = $job['contacts'];
+$contacts = $job['contacts'] ?? [];
 $channel  = $job['channel']  ?? 'both';
 $subject  = $job['subject']  ?? 'Mensagem Comunidade Ser';
-$message  = $job['message'];
+$message  = $job['message']  ?? '';
 $name     = $job['name']     ?? '';
 $total    = count($contacts);
+
+if (!$total) exit(0);
 
 // Inicia log
 $log = [
@@ -81,7 +83,7 @@ foreach ($contacts as $i => $c) {
         if ($emailCount % EMAIL_BATCH_SIZE === 0) {
             sleep(EMAIL_BATCH_WAIT);
         } else {
-            usleep(rand(EMAIL_DELAY_MIN, EMAIL_DELAY_MAX) * 100000);
+            usleep(rand(EMAIL_DELAY_MIN, EMAIL_DELAY_MAX) * 10000);
         }
     }
 
@@ -97,7 +99,7 @@ foreach ($contacts as $i => $c) {
             if ($waCount % WA_BATCH_SIZE === 0) {
                 sleep(WA_BATCH_WAIT);
             } else {
-                usleep(rand(WA_DELAY_MIN, WA_DELAY_MAX) * 100000);
+                usleep(rand(WA_DELAY_MIN, WA_DELAY_MAX) * 10000);
             }
         }
     }
@@ -105,9 +107,8 @@ foreach ($contacts as $i => $c) {
     // Contabiliza resultado
     $hasError = ($entry['email'] !== null && $entry['email'] !== 'ok')
              || ($entry['whatsapp'] !== null && $entry['whatsapp'] !== 'ok');
-    if ($hasError) {
-        $failed++;
-    } elseif ($anyOk) {
+    
+    if ($anyOk) {
         $sent++;
     } else {
         $failed++;
@@ -135,6 +136,7 @@ function write_log(string $token, array $data): void {
 
 // ── Envio de email via Gmail SMTP ─────────────────────────────────────────────
 function send_email(string $to, string $name, string $subject, string $body): bool|string {
+    if (!GMAIL_PASS) return "GMAIL_PASS não configurado";
     try {
         $smtp = new SmtpClient();
         $smtp->connect(GMAIL_HOST, GMAIL_PORT);
@@ -150,6 +152,7 @@ function send_email(string $to, string $name, string $subject, string $body): bo
 
 // ── Envio WhatsApp via Evolution API ─────────────────────────────────────────
 function send_whatsapp(string $number, string $text): bool|string {
+    if (!EVO_KEY) return "EVO_KEY não configurado";
     $url = EVO_URL . '/message/sendText/' . EVO_INST;
     $ch  = curl_init($url);
     curl_setopt_array($ch, [
@@ -201,7 +204,9 @@ class SmtpClient {
 
     public function starttls(): void {
         $this->cmd('STARTTLS');
-        stream_socket_enable_crypto($this->sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+        if (!stream_socket_enable_crypto($this->sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+            throw new RuntimeException("Falha ao iniciar TLS.");
+        }
         $this->cmd('EHLO comunidadeser.com');
     }
 
@@ -216,29 +221,21 @@ class SmtpClient {
         string $toEmail,   string $toName,
         string $subject,   string $body
     ): void {
-        $msgId = '<' . uniqid('', true) . '@comunidadeser.com>';
-        $date  = date('r');
-        $enc   = fn(string $s) => '=?UTF-8?B?' . base64_encode($s) . '?=';
-
         $this->cmd("MAIL FROM:<$fromEmail>");
         $this->cmd("RCPT TO:<$toEmail>");
         $this->cmd('DATA');
 
-        $msg  = "From: {$enc($fromName)} <$fromEmail>\r\n";
-        $msg .= "To: {$enc($toName ?: $toEmail)} <$toEmail>\r\n";
-        $msg .= "Subject: {$enc($subject)}\r\n";
-        $msg .= "Date: $date\r\n";
-        $msg .= "Message-ID: $msgId\r\n";
-        $msg .= "MIME-Version: 1.0\r\n";
-        $msg .= "Content-Type: text/plain; charset=UTF-8\r\n";
-        $msg .= "Content-Transfer-Encoding: base64\r\n";
-        $msg .= "List-Unsubscribe: <mailto:" . GMAIL_USER . "?subject=unsubscribe>\r\n";
-        $msg .= "\r\n";
-        $msg .= chunk_split(base64_encode($body));
-        $msg .= "\r\n.\r\n";
+        $headers = [
+            'MIME-Version: 1.0',
+            'Content-Type: text/plain; charset=UTF-8',
+            "From: =?UTF-8?B?" . base64_encode($fromName) . "?= <$fromEmail>",
+            "To: =?UTF-8?B?" . base64_encode($toName) . "?= <$toEmail>",
+            "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=",
+            "Date: " . date('r'),
+        ];
 
-        fwrite($this->sock, $msg);
-        $this->read();
+        $content = implode("\r\n", $headers) . "\r\n\r\n" . $body . "\r\n.";
+        $this->cmd($content);
     }
 
     public function quit(): void {
@@ -246,19 +243,18 @@ class SmtpClient {
         fclose($this->sock);
     }
 
-    private function cmd(string $cmd): string {
-        fwrite($this->sock, "$cmd\r\n");
+    private function cmd(string $c): string {
+        fwrite($this->sock, $c . "\r\n");
         return $this->read();
     }
 
     private function read(): string {
-        $resp = '';
-        while ($line = fgets($this->sock, 512)) {
-            $resp .= $line;
-            if (isset($line[3]) && $line[3] === ' ') break;
+        $res = '';
+        while ($str = fgets($this->sock, 512)) {
+            $res .= $str;
+            if (isset($str[3]) && $str[3] === ' ') break;
         }
-        $code = (int) substr($resp, 0, 3);
-        if ($code >= 400) throw new RuntimeException("SMTP: $resp");
-        return $resp;
+        if (isset($res[0]) && (int)$res[0] >= 4) throw new RuntimeException("Erro SMTP: " . trim($res));
+        return $res;
     }
 }
