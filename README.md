@@ -17,4 +17,5 @@ O sistema utiliza um arquivo `.env` para centralizar as credenciais:
 
 ## Contribuidores
 - **Daniel Mota** — Arquiteto e Desenvolvedor
+- **Claude** — Engenheiro de IA para Desenvolvimento e Automação
 - **Gemini CLI** — Engenheiro de IA para Desenvolvimento e Automação
