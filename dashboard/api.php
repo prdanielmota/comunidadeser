@@ -296,6 +296,13 @@ if ($action === 'lista_extrair') {
     $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     $tmp  = $file['tmp_name'];
 
+    $allowed_exts = ['pdf', 'txt', 'csv', 'xlsx', 'xls'];
+    if (!in_array($ext, $allowed_exts)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Tipo de arquivo não permitido (use PDF, TXT, CSV ou XLSX)']);
+        exit;
+    }
+
     if ($file['size'] > 10 * 1024 * 1024) { http_response_code(400); echo json_encode(['error' => 'Arquivo muito grande (máx. 10 MB)']); exit; }
 
     $prompt = "Analise o conteúdo deste arquivo e extraia todos os contatos/pessoas encontrados.\n\nRetorne SOMENTE um array JSON válido, sem texto adicional, comentários ou markdown. Cada objeto deve ter os campos disponíveis:\n- nome (string, obrigatório)\n- telefone (string: apenas dígitos, formato 55DDXXXXXXXXX — se tiver só DDD+número sem DDI, adicione 55; se for número de 8 dígitos sem DDD, tente inferir pelo contexto)\n- email (string)\n- bairro (string)\n- religiao (string)\n- sexo (\"Masculino\" ou \"Feminino\")\n- idade (string)\n- vip (\"Sim\" ou \"\")\n\nOmita campos ausentes no arquivo. Se nenhum contato for encontrado, retorne [].";

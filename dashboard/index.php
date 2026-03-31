@@ -39,21 +39,30 @@ function saveSiteLinks(array $d): bool {
     // Botões Principais (IDs fixos)
     $ids = ['offer'=>'btn-offer','join'=>'btn-join','member'=>'btn-member'];
     foreach($ids as $k=>$id){
-        $url  = $d['link_'.$k.'_url']  ?? '';
-        $text = $d['link_'.$k.'_text'] ?? '';
+        $url  = htmlspecialchars(trim(strip_tags($d['link_'.$k.'_url']  ?? '')), ENT_QUOTES, 'UTF-8');
+        $text = htmlspecialchars(trim(strip_tags($d['link_'.$k.'_text'] ?? '')), ENT_QUOTES, 'UTF-8');
         if (!$url || !$text) continue;
         $html = preg_replace('/(id="'.$id.'"[^>]*href=")[^"]*("[^>]*>)[^<]*(<\/a>)/is', '$1'.$url.'$2'.$text.'$3', $html);
     }
     
     // Redes Sociais (Texto fixo)
-    if (!empty($d['social_instagram'])) $html = preg_replace('/(href=")[^"]*("[^>]*>Instagram<\/a>)/is', '$1'.$d['social_instagram'].'$2', $html);
-    if (!empty($d['social_youtube']))   $html = preg_replace('/(href=")[^"]*("[^>]*>YouTube<\/a>)/is', '$1'.$d['social_youtube'].'$2', $html);
+    if (!empty($d['social_instagram'])) {
+        $insta = htmlspecialchars(trim(strip_tags($d['social_instagram'])), ENT_QUOTES, 'UTF-8');
+        $html = preg_replace('/(href=")[^"]*("[^>]*>Instagram<\/a>)/is', '$1'.$insta.'$2', $html);
+    }
+    if (!empty($d['social_youtube'])) {
+        $yt = htmlspecialchars(trim(strip_tags($d['social_youtube'])), ENT_QUOTES, 'UTF-8');
+        $html = preg_replace('/(href=")[^"]*("[^>]*>YouTube<\/a>)/is', '$1'.$yt.'$2', $html);
+    }
 
     // Também atualiza o JS interno (traduções) para o PT-BR (principal)
     $map = ['offer'=>'offer','join'=>'join','member'=>'member'];
     foreach($map as $k=>$key){
-        $text = $d['link_'.$k.'_text'] ?? '';
-        if ($text) $html = preg_replace("/($key:\s*')[^']*(')/is", "$1".$text."$2", $html);
+        $text = trim(strip_tags($d['link_'.$k.'_text'] ?? ''));
+        if ($text) {
+            $text = addslashes($text); // Protege contra quebra de string JS
+            $html = preg_replace("/($key:\s*')[^']*(')/is", "$1".$text."$2", $html);
+        }
     }
 
     return file_put_contents(INDEX_HTML, $html) !== false;
@@ -950,7 +959,7 @@ body{margin:0;padding:0}
               <?php if (!isViewer()): ?>
               <div class="actions">
                 <a href="/amigos/checkin.php?ev=<?= $ev['id'] ?>" class="btn-icon" title="Check-in" target="_blank" style="text-decoration:none">🔗</a>
-                <button class="btn-icon" title="Editar" onclick='editAmiEvent(<?= json_encode($ev) ?>)'>✏️</button>
+                <button class="btn-icon" title="Editar" onclick="editAmiEvent(<?= htmlspecialchars(json_encode($ev, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') ?>)">✏️</button>
                 <button class="btn-icon red" title="Excluir" onclick="deleteAmiEvent('<?= $ev['id'] ?>')">🗑️</button>
               </div>
               <?php endif; ?>
@@ -1281,7 +1290,7 @@ body{margin:0;padding:0}
                   <td><?= $u['ativo'] ? '<span class="badge bdg-ongoing">Ativo</span>' : '<span class="badge bdg-past">Inativo</span>' ?></td>
                   <td>
                     <div class="actions">
-                      <button class="btn-icon gold" onclick='editUser(<?= json_encode($u) ?>)' title="Editar">✏️</button>
+                      <button class="btn-icon gold" onclick="editUser(<?= htmlspecialchars(json_encode($u, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') ?>)" title="Editar">✏️</button>
                       <form method="POST" style="display:inline" onsubmit="return confirm('Excluir este usuário?')">
                         <input type="hidden" name="acao" value="del_user">
                         <input type="hidden" name="id" value="<?= esc($u['id']) ?>">
