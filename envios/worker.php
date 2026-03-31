@@ -39,11 +39,13 @@ $contacts = $job['contacts'];
 $channel  = $job['channel']  ?? 'both';
 $subject  = $job['subject']  ?? 'Mensagem Comunidade Ser';
 $message  = $job['message'];
+$name     = $job['name']     ?? '';
 $total    = count($contacts);
 
 // Inicia log
 $log = [
     'token'      => $token,
+    'name'       => $name,
     'started_at' => date('Y-m-d H:i:s'),
     'total'      => $total,
     'processed'  => 0,

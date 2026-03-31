@@ -1,6 +1,6 @@
 <?php
 // webhook.php — recebe notificações do Evolution API e aplica opt-out automático
-// Configure na Evolution API: POST para https://seusite.com/zap/webhook.php
+// Configure na Evolution API: POST para https://seusite.com/envios/webhook.php
 // Eventos: MESSAGES_UPSERT
 
 header('Content-Type: application/json; charset=utf-8');

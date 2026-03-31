@@ -1,6 +1,18 @@
 <?php
 session_start();
-if (empty($_SESSION['dash_auth'])) { http_response_code(401); echo json_encode(['error'=>'Unauthorized']); exit; }
+
+// Define ROOT se não estiver definido (caso acessado diretamente)
+if (!defined('ROOT')) {
+    define('ROOT', dirname(__DIR__));
+}
+
+// O dashboard usa $_SESSION['dash_user'] para autenticação
+if (empty($_SESSION['dash_user'])) { 
+    http_response_code(401); 
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['error'=>'Unauthorized']); 
+    exit; 
+}
 
 header('Content-Type: application/json; charset=utf-8');
 $action = $_GET['action'] ?? '';
@@ -10,7 +22,7 @@ if ($action === 'members') {
     $ch = curl_init('https://cms.osmota.org/items/COMUNIDADE_SER?limit=0&meta=total_count');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER  => true,
-        CURLOPT_HTTPHEADER      => ['Authorization: Bearer I4b5pP8yFdURnn8mzYPJVvQlEk6LQZv4'],
+        CURLOPT_HTTPHEADER      => ['Authorization: Bearer 4Rs0w-UajbSunakTHbLpDsdqxsNdSV9B'],
         CURLOPT_TIMEOUT         => 8,
         CURLOPT_CONNECTTIMEOUT  => 4,
         CURLOPT_SSL_VERIFYPEER  => false,
@@ -19,6 +31,227 @@ if ($action === 'members') {
     curl_close($ch);
     $data = json_decode($res ?: '{}', true);
     echo json_encode(['total' => $data['meta']['total_count'] ?? null]);
+    exit;
+}
+
+// ── Envios (Contatos & Disparos) ──────────────────────────
+if ($action === 'envios_contatos') {
+    $listName = $_GET['file'] ?? 'novo-tempo';
+    $fileName = ($listName === 'conectados-run') ? 'conectados-run-data.json' : 'novo-tempo.json';
+    $file = ROOT . '/envios/' . $fileName;
+    if (!file_exists($file)) { echo json_encode([]); exit; }
+    echo file_get_contents($file);
+    exit;
+}
+
+if ($action === 'envios_disparar') {
+    if ($_SESSION['dash_user']['role'] === 'viewer') { http_response_code(403); exit; }
+    
+    // Proxy para o script de disparo original
+    $url = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/envios/disparar.php';
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => file_get_contents('php://input'),
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_TIMEOUT => 30
+    ]);
+    $res = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    http_response_code($code);
+    echo $res;
+    exit;
+}
+
+if ($action === 'envios_status') {
+    $token = preg_replace('/[^a-f0-9]/', '', $_GET['token'] ?? '');
+    $url = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/envios/disparar.php?t=' . $token;
+    echo file_get_contents($url);
+    exit;
+}
+
+if ($action === 'envios_update' || $action === 'envios_optout') {
+    if ($_SESSION['dash_user']['role'] === 'viewer') { http_response_code(403); exit; }
+    $data = json_decode(file_get_contents('php://input'), true);
+    $file = ROOT . '/envios/novo-tempo.json';
+    $list = json_decode(file_get_contents($file), true) ?: [];
+    $idx  = $data['idx'] ?? -1;
+
+    if ($action === 'envios_update' && isset($list[$idx])) {
+        foreach (['nome','bairro','religiao','sexo','idade','vip','email','telefone'] as $f) {
+            if (isset($data['fields'][$f])) $list[$idx][$f] = $data['fields'][$f];
+        }
+    } elseif ($action === 'envios_optout' && isset($list[$idx])) {
+        $list[$idx]['opt_out'] = !($data['activate'] ?? false);
+        $list[$idx]['opt_out_date'] = date('c');
+        $list[$idx]['opt_out_source'] = 'dashboard';
+    }
+
+    file_put_contents($file, json_encode(array_values($list), JSON_UNESCAPED_UNICODE));
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
+// ── Amigos (Cadastros & Eventos) ──────────────────────────
+if ($action === 'amigos_cadastros') {
+    $file = ROOT . '/amigos/cadastros.json';
+    if (!file_exists($file)) { echo json_encode([]); exit; }
+    echo file_get_contents($file);
+    exit;
+}
+
+if (in_array($action, ['amigos_add','amigos_edit','amigos_delete'])) {
+    if ($_SESSION['dash_user']['role'] === 'viewer') { http_response_code(403); exit; }
+    $data = json_decode(file_get_contents('php://input'), true);
+    $file = ROOT . '/amigos/cadastros.json';
+    $list = json_decode(file_get_contents($file), true) ?: [];
+
+    if ($action === 'amigos_add') {
+        $list[] = [
+            'nome' => $data['nome'], 'email' => $data['email'], 'wpp' => $data['wpp'],
+            'classificacao' => $data['classificacao'], 'at' => date('c')
+        ];
+    } elseif ($action === 'amigos_edit') {
+        foreach ($list as &$r) {
+            if ($r['wpp'] === $data['wpp_original']) {
+                $r['nome'] = $data['nome']; $r['email'] = $data['email'];
+                $r['wpp'] = $data['wpp']; $r['classificacao'] = $data['classificacao'];
+                break;
+            }
+        }
+    } elseif ($action === 'amigos_delete') {
+        $list = array_values(array_filter($list, fn($r) => $r['wpp'] !== $data['wpp']));
+    }
+
+    file_put_contents($file, json_encode($list, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
+if (in_array($action, ['amigos_eventos_save', 'amigos_eventos_delete'])) {
+    if ($_SESSION['dash_user']['role'] === 'viewer') { http_response_code(403); exit; }
+    $data = json_decode(file_get_contents('php://input'), true);
+    $file = ROOT . '/amigos/eventos.json';
+    $evs  = json_decode(file_get_contents($file), true) ?: [];
+
+    if ($action === 'amigos_eventos_save') {
+        $id = $data['id'] ?? '';
+        $entry = [
+            'id'          => $id ?: bin2hex(random_bytes(8)),
+            'titulo'      => $data['titulo'],
+            'descricao'   => $data['descricao'] ?? '',
+            'data_inicio' => $data['data_inicio'],
+            'data_fim'    => $data['data_fim'] ?? '',
+            'local'       => $data['local'] ?? '',
+            'updated_at'  => date('c')
+        ];
+
+        $found = false;
+        if ($id) {
+            foreach ($evs as &$ev) {
+                if ($ev['id'] === $id) {
+                    $ev = array_merge($ev, $entry);
+                    $found = true; break;
+                }
+            }
+        }
+        if (!$found) {
+            $entry['created_at'] = date('c');
+            $entry['confirmacoes'] = [];
+            $evs[] = $entry;
+        }
+    } elseif ($action === 'amigos_eventos_delete') {
+        $evs = array_values(array_filter($evs, fn($ev) => $ev['id'] !== $data['id']));
+    }
+
+    file_put_contents($file, json_encode($evs, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
+// ── Site (Links Editor) ───────────────────────────────────
+function siteHtmlFile(): string { return ROOT . '/index.html'; }
+
+function siteGetLinks(): array {
+    $f = siteHtmlFile();
+    if (!file_exists($f)) return ['buttons' => [], 'social' => []];
+    $html = file_get_contents($f);
+    $buttons = [];
+    if (preg_match('/<div class="links-principais">(.*?)<\/div>/is', $html, $m)) {
+        preg_match_all('/<a\s([^>]*)>\s*([^<]*?)\s*<\/a>/is', $m[1], $ms, PREG_SET_ORDER);
+        foreach ($ms as $match) {
+            $attrs = $match[1]; $text = trim($match[2]);
+            preg_match('/\bid="([^"]+)"/', $attrs, $mid);
+            preg_match('/\bhref="([^"]+)"/', $attrs, $mhref);
+            if (empty($mid[1]) || empty($mhref[1])) continue;
+            $buttons[] = [
+                'id'       => $mid[1],
+                'text'     => $text,
+                'url'      => $mhref[1],
+                'featured' => (bool)preg_match('/\bfeatured\b/', $attrs),
+            ];
+        }
+    }
+    $social = [];
+    if (preg_match('/href="([^"]+)"[^>]*>Instagram<\/a>/is', $html, $m)) $social['instagram'] = trim($m[1]);
+    if (preg_match('/href="([^"]+)"[^>]*>YouTube<\/a>/is',   $html, $m)) $social['youtube']   = trim($m[1]);
+    return ['buttons' => $buttons, 'social' => $social];
+}
+
+if ($action === 'site_links') {
+    echo json_encode(siteGetLinks());
+    exit;
+}
+
+if ($action === 'site_link_save') {
+    if ($_SESSION['dash_user']['role'] === 'viewer') { http_response_code(403); exit; }
+    $d    = json_decode(file_get_contents('php://input'), true) ?? [];
+    $f    = siteHtmlFile();
+    $html = file_get_contents($f);
+    $id   = preg_replace('/[^a-z0-9_-]/', '', strtolower($d['id'] ?? ''));
+    $url  = $d['url']      ?? '';
+    $text = $d['text']     ?? '';
+    $feat = !empty($d['featured']);
+    if (!$id || !$url || !$text) { http_response_code(400); echo json_encode(['error'=>'Missing fields']); exit; }
+    $cls = 'btn-link' . ($feat ? ' featured' : '');
+    if (preg_match('/id="' . preg_quote($id, '/') . '"/', $html)) {
+        // Atualiza href e texto
+        $html = preg_replace('/(id="'.preg_quote($id,'/').'")[^>]*(href=")[^"]*(")/is', '$1 class="'.$cls.'" $2'.$url.'$3', $html);
+        $html = preg_replace('/(<a\s[^>]*id="'.preg_quote($id,'/').'")[^>]*(>)\s*[^<]*(<\/a>)/is', '$1$2'."\n                ".$text."\n            ".'$3', $html);
+    } else {
+        $newBtn = "\n            <a href=\"$url\" class=\"$cls\" id=\"$id\">\n                $text\n            </a>";
+        $html = preg_replace('/(<div class="links-principais">)(.*?)(<\/div>)/is', '$1$2'.$newBtn."\n        ".'$3', $html);
+    }
+    file_put_contents($f, $html);
+    echo json_encode(siteGetLinks());
+    exit;
+}
+
+if ($action === 'site_link_delete') {
+    if ($_SESSION['dash_user']['role'] === 'viewer') { http_response_code(403); exit; }
+    $d  = json_decode(file_get_contents('php://input'), true) ?? [];
+    $id = preg_replace('/[^a-z0-9_-]/', '', strtolower($d['id'] ?? ''));
+    if (!$id) { http_response_code(400); echo json_encode(['error'=>'Missing id']); exit; }
+    $f    = siteHtmlFile();
+    $html = file_get_contents($f);
+    $html = preg_replace('/\s*<a\s[^>]*id="'.preg_quote($id,'/').'"\s*[^>]*>\s*[^<]*<\/a>/is', '', $html);
+    file_put_contents($f, $html);
+    echo json_encode(siteGetLinks());
+    exit;
+}
+
+if ($action === 'site_social_save') {
+    if ($_SESSION['dash_user']['role'] === 'viewer') { http_response_code(403); exit; }
+    $d    = json_decode(file_get_contents('php://input'), true) ?? [];
+    $f    = siteHtmlFile();
+    $html = file_get_contents($f);
+    if (!empty($d['instagram'])) $html = preg_replace('/(href=")[^"]*("[^>]*>Instagram<\/a>)/is', '$1'.$d['instagram'].'$2', $html);
+    if (!empty($d['youtube']))   $html = preg_replace('/(href=")[^"]*("[^>]*>YouTube<\/a>)/is',   '$1'.$d['youtube'].'$2',   $html);
+    file_put_contents($f, $html);
+    echo json_encode(siteGetLinks());
     exit;
 }
 

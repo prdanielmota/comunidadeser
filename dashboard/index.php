@@ -13,6 +13,52 @@ function loadUsers(): array {
 function saveUsers(array $u): void {
     file_put_contents(USERS_FILE, json_encode($u, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 }
+
+// ── Funções Editor de Site
+function getSiteLinks(): array {
+    $html = file_get_contents(INDEX_HTML);
+    $data = [];
+    // Botões Principais
+    $ids = ['offer'=>'btn-offer','join'=>'btn-join','member'=>'btn-member'];
+    foreach($ids as $k=>$id){
+        if (preg_match('/id="'.$id.'"[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/is', $html, $m)){
+            $data['link_'.$k.'_url']  = trim($m[1]);
+            $data['link_'.$k.'_text'] = trim($m[2]);
+        }
+    }
+    // Redes Sociais
+    if (preg_match('/href="([^"]+)"[^>]*>Instagram<\/a>/is', $html, $m)) $data['social_instagram'] = trim($m[1]);
+    if (preg_match('/href="([^"]+)"[^>]*>YouTube<\/a>/is', $html, $m))   $data['social_youtube']   = trim($m[1]);
+    
+    return $data;
+}
+
+function saveSiteLinks(array $d): bool {
+    $html = file_get_contents(INDEX_HTML);
+    
+    // Botões Principais (IDs fixos)
+    $ids = ['offer'=>'btn-offer','join'=>'btn-join','member'=>'btn-member'];
+    foreach($ids as $k=>$id){
+        $url  = $d['link_'.$k.'_url']  ?? '';
+        $text = $d['link_'.$k.'_text'] ?? '';
+        if (!$url || !$text) continue;
+        $html = preg_replace('/(id="'.$id.'"[^>]*href=")[^"]*("[^>]*>)[^<]*(<\/a>)/is', '$1'.$url.'$2'.$text.'$3', $html);
+    }
+    
+    // Redes Sociais (Texto fixo)
+    if (!empty($d['social_instagram'])) $html = preg_replace('/(href=")[^"]*("[^>]*>Instagram<\/a>)/is', '$1'.$d['social_instagram'].'$2', $html);
+    if (!empty($d['social_youtube']))   $html = preg_replace('/(href=")[^"]*("[^>]*>YouTube<\/a>)/is', '$1'.$d['social_youtube'].'$2', $html);
+
+    // Também atualiza o JS interno (traduções) para o PT-BR (principal)
+    $map = ['offer'=>'offer','join'=>'join','member'=>'member'];
+    foreach($map as $k=>$key){
+        $text = $d['link_'.$k.'_text'] ?? '';
+        if ($text) $html = preg_replace("/($key:\s*')[^']*(')/is", "$1".$text."$2", $html);
+    }
+
+    return file_put_contents(INDEX_HTML, $html) !== false;
+}
+
 function me(): ?array  { return $_SESSION['dash_user'] ?? null; }
 function isSA(): bool  { return (me()['role'] ?? '') === 'superadmin'; }
 function canSee(string $s): bool {
@@ -58,7 +104,7 @@ if ($auth) {
         $usuario = mb_substr(trim($_POST['usuario'] ?? ''), 0, 50);
         $senha   = $_POST['senha'] ?? '';
         $role    = in_array($_POST['role']??'', ['superadmin','admin','viewer']) ? $_POST['role'] : 'admin';
-        $sis     = array_values(array_intersect($_POST['sistemas']??[], ['app','amigos','zap','site']));
+        $sis     = array_values(array_intersect($_POST['sistemas']??[], ['app','amigos','envios','site']));
         $ativo   = !empty($_POST['ativo']);
         if ($nome && $usuario && strlen($senha) >= 6) {
             $users = loadUsers();
@@ -82,7 +128,7 @@ if ($auth) {
         $nome = mb_substr(trim($_POST['nome']    ?? ''), 0, 100);
         $usu  = mb_substr(trim($_POST['usuario'] ?? ''), 0, 50);
         $role = in_array($_POST['role']??'', ['superadmin','admin','viewer']) ? $_POST['role'] : 'admin';
-        $sis  = array_values(array_intersect($_POST['sistemas']??[], ['app','amigos','zap','site']));
+        $sis  = array_values(array_intersect($_POST['sistemas']??[], ['app','amigos','envios','site']));
         $ativo = !empty($_POST['ativo']);
         $users = loadUsers();
         foreach ($users as &$u) {
@@ -121,8 +167,18 @@ if ($auth) {
         header('Location: ./?sec=usuarios'); exit;
     }
 
-    // ── Salvar index.html
-    if (canSee('site') && !isViewer() && ($_POST['acao']??'') === 'save_index') {
+    // ── Salvar Links do Site
+    if (canSee('site') && !isViewer() && ($_POST['acao']??'') === 'save_site_links') {
+        if (saveSiteLinks($_POST)) {
+            flash('success', 'Links do site atualizados com sucesso.');
+        } else {
+            flash('error', 'Falha ao salvar as alterações.');
+        }
+        header('Location: ./?sec=site'); exit;
+    }
+
+    // ── Salvar index.html (legado/backup)
+    if (canSee('site') && isSA() && ($_POST['acao']??'') === 'save_index') {
         $html = $_POST['html_content'] ?? '';
         if (strlen($html) > 10) {
             file_put_contents(INDEX_HTML, $html);
@@ -130,7 +186,7 @@ if ($auth) {
         } else {
             flash('error', 'Conteúdo muito curto — não salvo.');
         }
-        header('Location: ./?sec=editor'); exit;
+        header('Location: ./?sec=site'); exit;
     }
 }
 
@@ -141,7 +197,7 @@ unset($_SESSION['_flash']);
 /* ── DATA ───────────────────────────────────────────────────── */
 $totalAmigos = 0; $byClass = []; $recentCadastros = [];
 $eventos = []; $proxEvento = null;
-$zapTotal = 0; $totalOptouts = 0; $optoutsData = [];
+$enviosTotal = 0; $totalOptouts = 0; $optoutsData = [];
 $logs = []; $lastLog = null;
 $indexHtml = '';
 
@@ -177,12 +233,12 @@ if ($auth) {
             $proxEvento = $eventos[0] ?? null;
         }
     }
-    if (canSee('zap')) {
-        $zf = ROOT . '/zap/novo-tempo.json';
-        if (file_exists($zf)) $zapTotal = count(json_decode(file_get_contents($zf), true) ?: []);
-        $of = ROOT . '/zap/optouts.json';
+    if (canSee('envios')) {
+        $zf = ROOT . '/envios/novo-tempo.json';
+        if (file_exists($zf)) $enviosTotal = count(json_decode(file_get_contents($zf), true) ?: []);
+        $of = ROOT . '/envios/optouts.json';
         if (file_exists($of)) { $optoutsData = json_decode(file_get_contents($of), true) ?: []; $totalOptouts = count($optoutsData); }
-        $ld = ROOT . '/zap/.logs/';
+        $ld = ROOT . '/envios/.logs/';
         if (is_dir($ld)) {
             foreach (glob($ld.'*.json') as $f) { $l = json_decode(file_get_contents($f), true); if ($l) $logs[] = $l; }
             usort($logs, fn($a,$b)=>strcmp($b['started_at']??'',$a['started_at']??''));
@@ -200,7 +256,7 @@ function fdt(string $s, string $f='d/m/Y H:i'): string {
     catch (\Throwable) { return $s; }
 }
 function clLbl(string $c): string {
-    return ['interessado'=>'Interessado','estudo_biblico'=>'Est. Bíblico','candidato'=>'Candidato','batizado'=>'Batizado'][$c]??ucfirst($c);
+    return ['interessado'=>'Interessado','estudo_biblico'=>'Est. Bíblico','candidato'=>'Candidato','batizado'=>'Batizado','oracao'=>'Oração'][$c]??ucfirst($c);
 }
 function rate(int $s, int $t): string { return $t>0?round($s/$t*100).'%':'—'; }
 function roleLbl(string $r): string { return ['superadmin'=>'Superadmin','admin'=>'Admin','viewer'=>'Visualização'][$r]??$r; }
@@ -212,13 +268,15 @@ function roleLbl(string $r): string { return ['superadmin'=>'Superadmin','admin'
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Central — Comunidade Ser</title>
 <link rel="stylesheet" href="/assets/ser.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.js"></script>
 <style>
 .hidden{display:none!important}
 body{margin:0;padding:0}
 /* LAYOUT */
 .layout{display:flex;min-height:100vh}
 .sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:100;transition:transform .28s cubic-bezier(.22,1,.36,1)}
-.main{flex:1;margin-left:220px;padding:1.5rem;min-width:0;max-width:900px}
+.main{flex:1;margin-left:220px;padding:2rem 2.5rem;min-width:0;max-width:1400px}
 /* SIDEBAR */
 .sb-brand{padding:1.3rem 1.2rem 1.1rem;border-bottom:1px solid var(--border)}
 .sb-brand-name{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--gold);line-height:1}
@@ -285,7 +343,7 @@ body{margin:0;padding:0}
 .schip{display:inline-flex;padding:1px 6px;border-radius:4px;font-size:.67rem;font-weight:600;margin-right:2px}
 .schip-app{background:rgba(201,168,76,.1);color:var(--gold)}
 .schip-amigos{background:rgba(46,204,113,.1);color:var(--green)}
-.schip-zap{background:rgba(36,113,163,.1);color:var(--blue)}
+.schip-envios{background:rgba(36,113,163,.1);color:var(--blue)}
 .schip-site{background:rgba(255,255,255,.05);color:var(--text-muted)}
 /* CLASS */
 .cls-badge{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:600}
@@ -293,6 +351,7 @@ body{margin:0;padding:0}
 .cls-estudo_biblico{background:rgba(36,113,163,.12);color:var(--blue)}
 .cls-candidato{background:rgba(201,168,76,.12);color:var(--gold)}
 .cls-batizado{background:rgba(46,204,113,.12);color:var(--green)}
+.cls-oracao{background:rgba(155,89,182,.12);color:#a855f7}
 /* EV CARD */
 .ev-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem 1rem;margin-bottom:.55rem}
 .ev-card:last-child{margin-bottom:0}
@@ -359,6 +418,84 @@ body{margin:0;padding:0}
 .login-card button:hover{opacity:.88}
 .login-err{margin-top:.7rem;color:var(--red);font-size:.84rem;text-align:center}
 .empty-msg{text-align:center;padding:2rem 1rem;color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
+
+/* ── SUB-TABS ── */
+.sub-tabs{display:flex;gap:.5rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border);padding-bottom:2px}
+.sub-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--text-dim);padding:.6rem .85rem;font-size:.83rem;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit}
+.sub-tab:hover{color:var(--text)}
+.sub-tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* ── TABELAS ── */
+/* Herdado de ser.css, mantendo apenas ajustes específicos se houver */
+.actions{display:flex;gap:.4rem}
+.btn-icon{background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);transition:all .15s}
+.btn-icon:hover{border-color:var(--border-active);color:var(--text)}
+.btn-icon.red:hover{border-color:var(--red);color:var(--red)}
+.btn-icon.gold:hover{border-color:var(--gold);color:var(--gold)}
+
+/* FILTRO RADIO BUTTONS */
+.flt-btn{padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:.75rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.flt-btn:hover{border-color:var(--border-active);color:var(--text)}
+.flt-btn.on{background:var(--gold-glow);border-color:rgba(201,168,76,.5);color:var(--gold);font-weight:600}
+/* OVERLAY / MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(3px)}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border-active);border-radius:20px;padding:1.8rem 2rem;width:100%;max-width:480px;position:relative;max-height:94vh;overflow-y:auto}
+.modal h2{font-size:1.15rem;font-weight:700;margin-bottom:1rem;color:var(--gold)}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer}
+.form-row{margin-bottom:1rem}
+.form-row label{display:block;font-size:.72rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.35rem}
+.form-row input, .form-row select, .form-row textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:.7rem .9rem;color:var(--text);font-size:.9rem;font-family:inherit;outline:none}
+.form-row input:focus{border-color:var(--gold)}
+.modal-actions{display:flex;gap:.75rem;margin-top:1.5rem;justify-content:flex-end}
+/* ── Membros Admin ── */
+.mb-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.2rem;border-bottom:1px solid var(--border);transition:background .15s}
+.mb-row:last-child{border-bottom:none}
+.mb-row:hover{background:var(--surface2)}
+.mb-info{display:flex;align-items:center;gap:.75rem;flex:1;cursor:pointer;min-width:0}
+.mb-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;background:var(--surface2);flex-shrink:0}
+.mb-name{font-size:.85rem;font-weight:600;color:var(--text);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.mb-city{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
+.mb-act{display:flex;gap:.4rem;flex-shrink:0}
+.mb-act-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;background:var(--surface2);color:var(--text-muted)}
+.mb-act-btn:hover{border-color:var(--gold);color:var(--gold)}
+.mb-act-btn.wpp{background:rgba(46,204,113,.1);color:#2ECC71;border-color:rgba(46,204,113,.2)}
+.mb-act-btn svg{width:15px;height:15px}
+.mb-edit-layout{display:flex;flex-direction:column}
+@media(min-width:640px){.mb-edit-layout{flex-direction:row;max-height:82vh}}
+.mb-edit-side{padding:1.5rem;display:flex;flex-direction:column;align-items:center;gap:.65rem;background:var(--surface2);border-bottom:1px solid var(--border)}
+@media(min-width:640px){.mb-edit-side{width:180px;flex-shrink:0;border-bottom:none;border-right:1px solid var(--border)}}
+.mb-photo-ring{position:relative;cursor:pointer;display:inline-block}
+.mb-photo-ring img{width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid rgba(201,168,76,.3);padding:3px}
+.mb-photo-ov{position:absolute;inset:3px;background:rgba(0,0,0,.45);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.mb-photo-ring:hover .mb-photo-ov{opacity:1}
+.mb-photo-ov svg{width:20px;height:20px;color:#fff}
+.mb-edit-name{font-size:.82rem;font-weight:700;color:var(--text);text-transform:uppercase;text-align:center;line-height:1.3}
+.mb-edit-form{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.mb-edit-body{flex:1;overflow-y:auto;padding:1.25rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.g2 .fr{margin-bottom:0}
+.g2 .c2{grid-column:span 2}
+.mb-tog{display:flex;padding:3px;background:var(--surface2);border-radius:10px;margin-bottom:1rem}
+.mb-tog-opt{flex:1;padding:.5rem;background:none;border:none;cursor:pointer;font-family:inherit;font-size:.82rem;font-weight:600;color:var(--text-muted);border-radius:8px;transition:all .2s}
+.mb-tog-opt.on{background:var(--surface);color:var(--text);box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.mb-sched{background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.15);border-radius:9px;padding:.75rem 1rem;margin-top:.875rem}
+.mb-sched-row{display:flex;justify-content:space-between;align-items:center}
+.mb-sched-row label{font-size:.75rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;cursor:pointer}
+.mb-sched-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--gold)}
+.mb-prog{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:.75rem 1rem;margin-top:.875rem}
+.mb-prog-head{display:flex;justify-content:space-between;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--gold);margin-bottom:.5rem}
+.mb-prog-bar{height:5px;background:var(--border);border-radius:10px;overflow:hidden}
+.mb-prog-fill{height:100%;background:var(--gold);width:0;transition:width .3s}
+#mb-crop-container{width:100%;height:290px;border-radius:12px;overflow:hidden;background:var(--surface2);margin-bottom:1.25rem}
+.mb-fr{margin-bottom:.875rem}
+.mb-fr:last-child{margin-bottom:0}
+.mb-fr label{display:block;font-size:.68rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem}
+.mb-fr input,.mb-fr textarea,.mb-fr select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .8rem;color:var(--text);font-size:.88rem;font-family:inherit;outline:none}
+.mb-fr input:focus,.mb-fr textarea:focus{border-color:var(--gold)}
+.mb-log-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mb-log-dot.ok{background:var(--green)}
+.mb-log-dot.err{background:var(--red)}
 </style>
 </head>
 <body>
@@ -388,8 +525,7 @@ body{margin:0;padding:0}
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sb-brand">
-      <div class="sb-brand-name">SER</div>
-      <div class="sb-brand-sub">Central de Controle</div>
+      <img src="https://comunidadeser.com/wp-content/uploads/2025/01/logo_ser_branca-1-300x197.png" alt="Comunidade SER" style="max-width:110px;height:auto;display:block;margin-bottom:.35rem;opacity:.92">
     </div>
     <div class="sb-user">
       <strong><?= esc(me()['nome'] ?? '') ?></strong>
@@ -403,7 +539,7 @@ body{margin:0;padding:0}
       <?php if (canSee('app')): ?>
       <button class="nav-lnk" id="nl-app" onclick="showSec('app')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        App — Membros
+        Membros
       </button>
       <?php endif; ?>
       <?php if (canSee('amigos')): ?>
@@ -412,10 +548,16 @@ body{margin:0;padding:0}
         Amigos
       </button>
       <?php endif; ?>
-      <?php if (canSee('zap')): ?>
-      <button class="nav-lnk" id="nl-zap" onclick="showSec('zap')">
+      <?php if (canSee('amigos')): ?>
+      <button class="nav-lnk" id="nl-eventos" onclick="showSec('eventos')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke-linecap="round"/><path stroke-linecap="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Eventos
+      </button>
+      <?php endif; ?>
+      <?php if (canSee('envios')): ?>
+      <button class="nav-lnk" id="nl-envios" onclick="showSec('envios')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/></svg>
-        Zap
+        Envios
       </button>
       <?php endif; ?>
       <?php if (canSee('site')): ?>
@@ -429,12 +571,6 @@ body{margin:0;padding:0}
       <button class="nav-lnk" id="nl-usuarios" onclick="showSec('usuarios')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         Usuários
-      </button>
-      <?php endif; ?>
-      <?php if (canSee('site') && !isViewer()): ?>
-      <button class="nav-lnk" id="nl-editor" onclick="showSec('editor')">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-        Editor do Site
       </button>
       <?php endif; ?>
     </nav>
@@ -469,8 +605,8 @@ body{margin:0;padding:0}
         <?php if (canSee('amigos')): ?>
         <div class="stat"><div class="stat-val"><?= $totalAmigos ?></div><div class="stat-lbl">Cadastros (Amigos)</div></div>
         <?php endif; ?>
-        <?php if (canSee('zap')): ?>
-        <div class="stat"><div class="stat-val"><?= $zapTotal ?></div><div class="stat-lbl">Contatos (Zap)</div></div>
+        <?php if (canSee('envios')): ?>
+        <div class="stat"><div class="stat-val"><?= $enviosTotal ?></div><div class="stat-lbl">Contatos (Envios)</div></div>
         <div class="stat"><div class="stat-val" style="<?= $totalOptouts>0?'color:var(--red)':'' ?>"><?= $totalOptouts ?></div><div class="stat-lbl">Opt-outs</div></div>
         <?php endif; ?>
       </div>
@@ -479,7 +615,7 @@ body{margin:0;padding:0}
         <?php if (canSee('app')): ?>
         <div class="sys-card" onclick="showSec('app')">
           <div class="sys-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
-          <div class="sys-name">App — Membros</div>
+          <div class="sys-name">Membros</div>
           <div class="sys-desc">Perfis, aniversários automáticos, comunicação WhatsApp e e-mail</div>
           <div><div class="sys-stat" id="sc-app">…</div><div class="sys-lbl">membros</div></div>
           <div class="sys-footer"><a href="/app/admin.html" class="link-ext" onclick="event.stopPropagation()" target="_blank">Admin ↗</a></div>
@@ -494,13 +630,13 @@ body{margin:0;padding:0}
           <div class="sys-footer"><a href="/amigos/dashboard.php" class="link-ext" onclick="event.stopPropagation()" target="_blank">Dashboard ↗</a></div>
         </div>
         <?php endif; ?>
-        <?php if (canSee('zap')): ?>
-        <div class="sys-card" onclick="showSec('zap')">
+        <?php if (canSee('envios')): ?>
+        <div class="sys-card" onclick="showSec('envios')">
           <div class="sys-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/></svg></div>
-          <div class="sys-name">Zap</div>
+          <div class="sys-name">Envios</div>
           <div class="sys-desc">Disparos em massa, opt-outs e histórico de transmissões</div>
-          <div><div class="sys-stat"><?= $zapTotal ?></div><div class="sys-lbl">contatos</div></div>
-          <div class="sys-footer"><a href="/zap/" class="link-ext" onclick="event.stopPropagation()" target="_blank">Transmissão ↗</a></div>
+          <div><div class="sys-stat"><?= $enviosTotal ?></div><div class="sys-lbl">contatos</div></div>
+          <div class="sys-footer"><a href="/envios/" class="link-ext" onclick="event.stopPropagation()" target="_blank">Transmissão ↗</a></div>
         </div>
         <?php endif; ?>
         <?php if (canSee('site')): ?>
@@ -515,14 +651,17 @@ body{margin:0;padding:0}
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem">
-        <?php if (canSee('zap') && $lastLog): ?>
+        <?php if (canSee('envios') && $lastLog): ?>
         <div class="panel">
           <div class="panel-hd"><span class="panel-title">Último Disparo</span><span class="badge <?= ($lastLog['status']??'')==='done'?'bdg-ongoing':'bdg-future' ?>"><?= ($lastLog['status']??'')==='done'?'Concluído':'Pendente' ?></span></div>
           <div style="padding:.875rem 1.1rem">
             <?php $ck=($lastLog['channel']??'')==='email'?'eml':'wpp'; ?>
             <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.7rem">
               <div class="log-ch <?= $ck ?>"><?php if($ck==='wpp'): ?><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round"/></svg><?php else: ?><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg><?php endif; ?></div>
-              <div><div class="log-dt"><?= strtoupper($lastLog['channel']??'—') ?></div><div class="log-mt"><?= fdt($lastLog['started_at']??'') ?></div></div>
+              <div>
+                <div class="log-dt"><?= esc($lastLog['name'] ?? '') ?: strtoupper($lastLog['channel']??'—') ?></div>
+                <div class="log-mt"><?= strtoupper($lastLog['channel']??'—') ?> · <?= fdt($lastLog['started_at']??'') ?></div>
+              </div>
             </div>
             <div class="stats" style="gap:.4rem">
               <div class="stat" style="padding:.5rem .75rem"><div class="stat-val" style="font-size:1.1rem"><?= $lastLog['total']??0 ?></div><div class="stat-lbl">Total</div></div>
@@ -531,7 +670,7 @@ body{margin:0;padding:0}
             </div>
           </div>
         </div>
-        <?php elseif(canSee('zap')): ?>
+        <?php elseif(canSee('envios')): ?>
         <div class="panel"><div class="panel-hd"><span class="panel-title">Último Disparo</span></div><div class="empty-msg">Nenhum disparo registrado</div></div>
         <?php endif; ?>
 
@@ -560,24 +699,34 @@ body{margin:0;padding:0}
     <!-- ═══════════════════════════════════════════ -->
     <?php if (canSee('app')): ?>
     <div class="section" id="sec-app">
-      <div class="stats" style="margin-bottom:1.1rem">
-        <div class="stat"><div class="stat-val" id="stat-app-m">…</div><div class="stat-lbl">Total membros</div></div>
+      <div class="sub-tabs">
+        <button class="sub-tab on" data-target="mb-overview" onclick="showSub(this)">Visão Geral</button>
+        <?php if(!isViewer()): ?>
+        <button class="sub-tab" data-target="mb-membros" onclick="showSub(this);mbEnsureData()">Membros</button>
+        <button class="sub-tab" data-target="mb-logs" onclick="showSub(this);mbLoadLogs()">Logs</button>
+        <button class="sub-tab" data-target="mb-ajustes" onclick="showSub(this);mbLoadConfigs()">Ajustes</button>
+        <?php endif; ?>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem">
-        <div class="panel">
-          <div class="panel-hd"><span class="panel-title">Painel Admin</span></div>
-          <div class="panel-body" style="display:flex;flex-direction:column;gap:.6rem">
-            <p style="font-size:.83rem;color:var(--text-dim);line-height:1.6;margin:0">Membros gerenciados via <strong style="color:var(--text)">Directus CMS</strong>. Perfis com foto, automações de aniversário e comunicação em massa.</p>
-            <?php if (!isViewer()): ?>
-            <a href="/app/admin.html" class="btn btn-gold" style="text-align:center;text-decoration:none" target="_blank">Abrir Admin ↗</a>
-            <?php endif; ?>
-            <a href="/app/" class="btn btn-outline" style="text-align:center;text-decoration:none" target="_blank">Portal do Membro ↗</a>
-          </div>
+
+      <!-- Visão Geral -->
+      <div id="mb-overview" class="sub-sec">
+        <div class="stats" style="margin-bottom:1.1rem">
+          <div class="stat"><div class="stat-val" id="mb-stat-total" style="font-size:1.6rem">…</div><div class="stat-lbl">Total membros</div></div>
+          <div class="stat"><div class="stat-val" id="mb-stat-photo" style="font-size:1.6rem">…</div><div class="stat-lbl">Com foto</div></div>
+          <div class="stat"><div class="stat-val" id="mb-stat-whats" style="font-size:1.6rem">…</div><div class="stat-lbl">WhatsApp</div></div>
+          <div class="stat"><div class="stat-val" id="mb-stat-cep" style="font-size:1.6rem">…</div><div class="stat-lbl">Endereço</div></div>
         </div>
+        <?php if(!isViewer()): ?>
+        <div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap">
+          <button class="btn btn-gold btn-sm" onclick="mbOpenBroadcast()">Comunicar</button>
+          <button class="btn btn-outline btn-sm" onclick="mbExportCSV()">Exportar CSV</button>
+          <a href="/app/" class="btn btn-outline btn-sm" style="text-decoration:none" target="_blank">Portal do Membro ↗</a>
+        </div>
+        <?php endif; ?>
         <div class="panel">
-          <div class="panel-hd"><span class="panel-title">Funcionalidades</span></div>
+          <div class="panel-hd"><span class="panel-title">Funcionalidades do App</span></div>
           <div class="panel-body">
-            <ul style="margin:0;padding:0 0 0 1rem;display:flex;flex-direction:column;gap:.45rem">
+            <ul style="margin:0;padding:0 0 0 1.2rem;display:flex;flex-direction:column;gap:.45rem">
               <?php foreach(['Perfis com foto (crop automático)','Aniversários automáticos (cron 08h)','Comunicados gerais — WhatsApp','Comunicados gerais — E-mail','Agendamento de mensagens','Logs de automação'] as $f): ?>
               <li style="font-size:.82rem;color:var(--text-dim)"><?= $f ?></li>
               <?php endforeach; ?>
@@ -585,6 +734,61 @@ body{margin:0;padding:0}
           </div>
         </div>
       </div>
+
+      <!-- Membros -->
+      <?php if(!isViewer()): ?>
+      <div id="mb-membros" class="sub-sec" style="display:none">
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="panel-title">Membros</span>
+            <span class="count-badge" id="mb-list-count">…</span>
+          </div>
+          <div style="padding:.65rem 1rem;border-bottom:1px solid var(--border)">
+            <input type="text" id="mb-search-input" placeholder="Nome, e-mail ou cidade…" oninput="mbFilterMembers(this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border);padding:.5rem .8rem;border-radius:6px;color:var(--text);font-size:.85rem;font-family:inherit;outline:none">
+          </div>
+          <div id="mb-members-list" style="max-height:560px;overflow-y:auto">
+            <div class="empty-msg">Carregando…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logs -->
+      <div id="mb-logs" class="sub-sec" style="display:none">
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="panel-title">Logs de Automação</span>
+            <button class="btn btn-outline btn-sm" onclick="mbLoadLogs()">Atualizar</button>
+          </div>
+          <div id="mb-logs-list" style="max-height:480px;overflow-y:auto">
+            <div class="empty-msg">Carregando…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ajustes -->
+      <div id="mb-ajustes" class="sub-sec" style="display:none">
+        <div class="panel">
+          <div class="panel-hd"><span class="panel-title">Mensagens de Aniversário</span></div>
+          <div class="panel-body">
+            <div class="form-row">
+              <label>WhatsApp</label>
+              <textarea id="mb-msg-whats" rows="4" placeholder="Feliz aniversário, {nome}!"></textarea>
+            </div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0">
+            <div class="form-row">
+              <label>E-mail — Assunto</label>
+              <input type="text" id="mb-msg-email-sub" placeholder="Feliz Aniversário!">
+            </div>
+            <div class="form-row" style="margin-top:.75rem">
+              <label>E-mail — Corpo</label>
+              <textarea id="mb-msg-email-body" rows="6" placeholder="Olá {nome}, desejamos um feliz aniversário!"></textarea>
+            </div>
+            <button class="btn btn-gold" style="margin-top:.5rem" onclick="mbSaveConfigs()">Salvar Ajustes</button>
+          </div>
+        </div>
+      </div>
+      <?php endif; ?>
+
     </div>
     <?php endif; ?>
 
@@ -594,129 +798,353 @@ body{margin:0;padding:0}
     <!-- ═══════════════════════════════════════════ -->
     <?php if (canSee('amigos')): ?>
     <div class="section" id="sec-amigos">
+      <div class="sub-tabs">
+        <button class="sub-tab on" data-target="ami-overview" onclick="showSub(this)">Visão Geral</button>
+        <button class="sub-tab" data-target="ami-membros" onclick="showSub(this)">Amigos</button>
+        <?php if (canSee('envios')): ?>
+        <button class="sub-tab" data-target="ami-listas" onclick="showSub(this);if(!window._envLoaded)loadEnviosContatos()">Listas</button>
+        <?php endif; ?>
+      </div>
+
+      <div id="ami-overview" class="sub-sec">
+        <div class="stats" style="margin-bottom:1.1rem">
+          <div class="stat"><div class="stat-val"><?= $totalAmigos ?></div><div class="stat-lbl">Total cadastros</div></div>
+          <?php foreach(['batizado','candidato','estudo_biblico','interessado','oracao'] as $cl): if(!empty($byClass[$cl])): ?>
+          <div class="stat"><div class="stat-val" style="font-size:1.3rem"><?= $byClass[$cl] ?></div><div class="stat-lbl"><?= clLbl($cl) ?></div></div>
+          <?php endif; endforeach; ?>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem;margin-bottom:.875rem">
+          <div class="panel">
+            <div class="panel-hd"><span class="panel-title">Por classificação</span></div>
+            <div class="panel-body">
+              <?php $barColors=['batizado'=>'var(--green)','candidato'=>'var(--gold)','estudo_biblico'=>'var(--blue)','interessado'=>'var(--text-muted)','oracao'=>'#a855f7'];
+              foreach(['batizado','candidato','estudo_biblico','interessado','oracao'] as $cl):
+                $n=$byClass[$cl]??0; if(!$n) continue; $pct=$totalAmigos>0?round($n/$totalAmigos*100):0; ?>
+              <div class="cl-bar-wrap">
+                <div class="cl-bar-label"><span><?= clLbl($cl) ?></span><span><?= $n ?> (<?= $pct ?>%)</span></div>
+                <div class="cl-bar"><div class="cl-bar-fill" style="width:<?= $pct ?>%;background:<?= $barColors[$cl] ?>"></div></div>
+              </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-hd"><span class="panel-title">Acesso rápido</span></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:.5rem">
+              <button class="btn btn-gold" onclick="document.querySelector('[data-target=ami-membros]').click()">Gerenciar Amigos</button>
+              <button class="btn btn-outline" onclick="document.querySelector('[data-target=ami-eventos]').click()">Gerenciar Eventos</button>
+              <a href="/amigos/checkin.php" class="btn btn-outline" style="text-align:center;text-decoration:none" target="_blank">Check-in QR ↗</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="ami-membros" class="sub-sec" style="display:none">
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="panel-title">Lista de Amigos</span>
+            <button class="btn btn-gold btn-sm" onclick="openAmiAdd()">+ Novo Cadastro</button>
+          </div>
+          <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+            <input type="text" id="ami-search" placeholder="Buscar por nome, WhatsApp..." onkeyup="filterAmiContatos()" style="flex:1;min-width:160px;background:var(--surface2);border:1px solid var(--border);padding:.5rem .8rem;border-radius:6px;color:var(--text);font-size:.85rem">
+            <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+              <button class="flt-btn on" id="ami-cl-all" onclick="setAmiClass('',this)">Todos</button>
+              <button class="flt-btn" onclick="setAmiClass('batizado',this)">Batizados</button>
+              <button class="flt-btn" onclick="setAmiClass('candidato',this)">Candidatos</button>
+              <button class="flt-btn" onclick="setAmiClass('estudo_biblico',this)">Estudo Bíblico</button>
+              <button class="flt-btn" onclick="setAmiClass('interessado',this)">Interessados</button>
+              <button class="flt-btn" onclick="setAmiClass('oracao',this)">Oração</button>
+            </div>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <div class="tbl-wrap" style="margin-top:0;border:none;border-radius:0">
+              <table class="tbl">
+                <thead><tr><th>Nome</th><th>WhatsApp</th><th>Classificação</th><th>Ações</th></tr></thead>
+                <tbody id="ami-membros-list">
+                  <tr><td colspan="4" class="empty-msg">Carregando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <?php if (canSee('envios')): ?>
+      <div id="ami-listas" class="sub-sec" style="display:none">
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="panel-title">Base de Contatos</span>
+            <div style="display:flex;gap:4px" id="env-list-selector">
+              <button class="btn btn-outline btn-xs on" onclick="changeEnvList('novo-tempo', this)">Novo Tempo</button>
+              <button class="btn btn-outline btn-xs" onclick="changeEnvList('conectados-run', this)">Conectados Run</button>
+            </div>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;gap:.5rem">
+              <input type="text" id="env-search" placeholder="Buscar por nome, bairro, religião..." onkeyup="filterEnvContatos()" style="flex:1;background:var(--surface2);border:1px solid var(--border);padding:.5rem .8rem;border-radius:6px;color:var(--text);font-size:.85rem">
+            </div>
+            <div class="tbl-wrap" style="margin-top:0;border:none;border-radius:0">
+              <table class="tbl">
+                <thead><tr><th>Nome</th><th>Bairro</th><th>Religião</th><th>WhatsApp</th><th>Status</th><th>Ações</th></tr></thead>
+                <tbody id="env-contatos-list">
+                  <tr><td colspan="6" class="empty-msg">Clique em "Listas" para carregar...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <?php endif; ?>
+
+    </div>
+    <?php endif; ?>
+
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- EVENTOS                                     -->
+    <!-- ═══════════════════════════════════════════ -->
+    <?php if (canSee('amigos')): ?>
+    <div class="section" id="sec-eventos">
       <div class="stats" style="margin-bottom:1.1rem">
-        <div class="stat"><div class="stat-val"><?= $totalAmigos ?></div><div class="stat-lbl">Total cadastros</div></div>
-        <?php foreach(['batizado','candidato','estudo_biblico','interessado'] as $cl): if(!empty($byClass[$cl])): ?>
-        <div class="stat"><div class="stat-val" style="font-size:1.3rem"><?= $byClass[$cl] ?></div><div class="stat-lbl"><?= clLbl($cl) ?></div></div>
-        <?php endif; endforeach; ?>
+        <div class="stat"><div class="stat-val"><?= count($eventos) ?></div><div class="stat-lbl">Total eventos</div></div>
+        <?php
+          $nFuture = count(array_filter($eventos, fn($e) => $e['_st']==='future'));
+          $nOngoing = count(array_filter($eventos, fn($e) => $e['_st']==='ongoing'));
+          if ($nOngoing): ?><div class="stat"><div class="stat-val" style="color:var(--green)"><?= $nOngoing ?></div><div class="stat-lbl">Em curso</div></div><?php endif; ?>
+        <?php if ($nFuture): ?><div class="stat"><div class="stat-val" style="color:var(--blue)"><?= $nFuture ?></div><div class="stat-lbl">Próximos</div></div><?php endif; ?>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem;margin-bottom:.875rem">
-        <div class="panel">
-          <div class="panel-hd"><span class="panel-title">Por classificação</span></div>
-          <div class="panel-body">
-            <?php $barColors=['batizado'=>'var(--green)','candidato'=>'var(--gold)','estudo_biblico'=>'var(--blue)','interessado'=>'var(--text-muted)'];
-            foreach(['batizado','candidato','estudo_biblico','interessado'] as $cl):
-              $n=$byClass[$cl]??0; if(!$n) continue; $pct=$totalAmigos>0?round($n/$totalAmigos*100):0; ?>
-            <div class="cl-bar-wrap">
-              <div class="cl-bar-label"><span><?= clLbl($cl) ?></span><span><?= $n ?> (<?= $pct ?>%)</span></div>
-              <div class="cl-bar"><div class="cl-bar-fill" style="width:<?= $pct ?>%;background:<?= $barColors[$cl] ?>"></div></div>
-            </div>
-            <?php endforeach; ?>
-          </div>
+      <div class="panel">
+        <div class="panel-hd">
+          <span class="panel-title">Eventos</span>
+          <?php if (!isViewer()): ?><button class="btn btn-gold btn-sm" onclick="openAmiEvAdd()">+ Novo Evento</button><?php endif; ?>
         </div>
-        <div class="panel">
-          <div class="panel-hd"><span class="panel-title">Acesso rápido</span></div>
-          <div class="panel-body" style="display:flex;flex-direction:column;gap:.5rem">
-            <?php if(!isViewer()): ?>
-            <a href="/amigos/dashboard.php" class="btn btn-gold" style="text-align:center;text-decoration:none" target="_blank">Dashboard Amigos ↗</a>
-            <?php endif; ?>
-            <a href="/amigos/" class="btn btn-outline" style="text-align:center;text-decoration:none" target="_blank">Portal Público ↗</a>
-            <a href="/amigos/checkin.php" class="btn btn-outline" style="text-align:center;text-decoration:none" target="_blank">Check-in ↗</a>
-          </div>
-        </div>
-      </div>
-      <div class="panel" style="margin-bottom:.875rem">
-        <div class="panel-hd"><span class="panel-title">Eventos</span><span class="count-badge"><?= count($eventos) ?></span></div>
         <div class="panel-body">
-          <?php if(empty($eventos)): ?><div class="empty-msg">Nenhum evento</div>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem">
+            <button class="flt-btn on" id="ev-f-all" onclick="filterEventos('all',this)">Todos</button>
+            <button class="flt-btn" id="ev-f-future" onclick="filterEventos('future',this)">Próximos</button>
+            <button class="flt-btn" id="ev-f-ongoing" onclick="filterEventos('ongoing',this)">Em curso</button>
+            <button class="flt-btn" id="ev-f-past" onclick="filterEventos('past',this)">Encerrados</button>
+          </div>
+          <div id="ev-list">
+          <?php if(empty($eventos)): ?><div class="empty-msg">Nenhum evento cadastrado</div>
           <?php else: foreach($eventos as $ev): ?>
-          <div class="ev-card">
-            <div class="ev-top"><div class="ev-title"><?= esc($ev['titulo']??'') ?></div><span class="badge bdg-<?= $ev['_st'] ?>"><?= $ev['_lb'] ?></span></div>
-            <div class="ev-meta">
-              <span>📅 <?= fdt($ev['data_inicio']??'') ?></span>
-              <?php if(!empty($ev['data_fim'])): ?><span>→ <?= fdt($ev['data_fim']) ?></span><?php endif; ?>
-              <?php if(!empty($ev['local'])): ?><span>📍 <?= esc($ev['local']) ?></span><?php endif; ?>
+          <div class="ev-card" data-ev-st="<?= $ev['_st'] ?>" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.75rem">
+            <div style="display:flex;justify-content:space-between;margin-bottom:.4rem">
+              <div style="font-size:.92rem;font-weight:600;color:var(--text)"><?= esc($ev['titulo']??'') ?></div>
+              <span class="badge bdg-<?= $ev['_st'] ?>"><?= $ev['_lb'] ?></span>
             </div>
-            <div class="ev-stats">
-              <span class="ev-stat"><strong><?= $ev['_nc'] ?></strong> confirmados</span>
-              <span class="ev-stat"><strong><?= $ev['_nk'] ?></strong> check-ins</span>
-              <?php if($ev['_nc']>0): ?><span class="ev-stat" style="color:var(--gold)"><strong><?= rate($ev['_nk'],$ev['_nc']) ?></strong> taxa</span><?php endif; ?>
+            <?php if (!empty($ev['local'])): ?><div style="font-size:.73rem;color:var(--text-muted);margin-bottom:.3rem">📍 <?= esc($ev['local']) ?></div><?php endif; ?>
+            <div style="font-size:.78rem;color:var(--text-dim);margin-bottom:.6rem">
+              📅 <?= fdt($ev['data_inicio']??'') ?><?php if(!empty($ev['data_fim'])): ?> → <?= fdt($ev['data_fim']) ?><?php endif; ?>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="display:flex;gap:1rem;font-size:.8rem">
+                <span>👥 <strong><?= $ev['_nc'] ?></strong> confirmados</span>
+                <span>✅ <strong><?= $ev['_nk'] ?></strong> check-ins</span>
+                <?php if($ev['_nc']>0): ?><span style="color:var(--gold)">📊 <?= rate($ev['_nk'],$ev['_nc']) ?></span><?php endif; ?>
+              </div>
+              <?php if (!isViewer()): ?>
+              <div class="actions">
+                <a href="/amigos/checkin.php?ev=<?= $ev['id'] ?>" class="btn-icon" title="Check-in" target="_blank" style="text-decoration:none">🔗</a>
+                <button class="btn-icon" title="Editar" onclick='editAmiEvent(<?= json_encode($ev) ?>)'>✏️</button>
+                <button class="btn-icon red" title="Excluir" onclick="deleteAmiEvent('<?= $ev['id'] ?>')">🗑️</button>
+              </div>
+              <?php endif; ?>
             </div>
           </div>
           <?php endforeach; endif; ?>
+          </div>
         </div>
-      </div>
-      <div class="panel">
-        <div class="panel-hd"><span class="panel-title">Adições recentes</span><span class="count-badge"><?= count($recentCadastros) ?></span></div>
-        <?php if(empty($recentCadastros)): ?><div class="empty-msg">Nenhum cadastro</div>
-        <?php else: ?>
-        <div class="tbl-wrap"><table class="tbl">
-          <thead><tr><th>Nome</th><th>WhatsApp</th><th>Classificação</th><th>Data</th></tr></thead>
-          <tbody>
-            <?php foreach($recentCadastros as $c): ?>
-            <tr>
-              <td><?= esc($c['nome']??'—') ?></td>
-              <td style="color:var(--text-muted)"><?= esc($c['wpp']??'—') ?></td>
-              <td><span class="cls-badge cls-<?= esc($c['classificacao']??'interessado') ?>"><?= clLbl($c['classificacao']??'interessado') ?></span></td>
-              <td style="color:var(--text-muted);font-size:.73rem"><?= fdt($c['at']??'') ?></td>
-            </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table></div>
-        <?php endif; ?>
       </div>
     </div>
     <?php endif; ?>
 
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- ZAP                                          -->
+    <!-- ENVIOS                                      -->
     <!-- ═══════════════════════════════════════════ -->
-    <?php if (canSee('zap')): ?>
-    <div class="section" id="sec-zap">
-      <div class="stats" style="margin-bottom:1.1rem">
-        <div class="stat"><div class="stat-val"><?= $zapTotal ?></div><div class="stat-lbl">Contatos</div></div>
-        <div class="stat"><div class="stat-val" style="<?= $totalOptouts>0?'color:var(--red)':'' ?>"><?= $totalOptouts ?></div><div class="stat-lbl">Opt-outs</div></div>
-        <div class="stat"><div class="stat-val"><?= $zapTotal>0?round($totalOptouts/$zapTotal*100,1).'%':'—' ?></div><div class="stat-lbl">Taxa opt-out</div></div>
-        <div class="stat"><div class="stat-val"><?= count($logs) ?></div><div class="stat-lbl">Disparos</div></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem;margin-bottom:.875rem">
-        <div class="panel">
-          <div class="panel-hd"><span class="panel-title">Acesso rápido</span></div>
-          <div class="panel-body" style="display:flex;flex-direction:column;gap:.5rem">
-            <?php if(!isViewer()): ?>
-            <a href="/zap/" class="btn btn-gold" style="text-align:center;text-decoration:none" target="_blank">Painel de Transmissão ↗</a>
-            <?php endif; ?>
-          </div>
-        </div>
-        <?php if(!empty($optoutsData)): ?>
-        <div class="panel">
-          <div class="panel-hd"><span class="panel-title">Opt-outs recentes</span><span class="count-badge"><?= $totalOptouts ?></span></div>
-          <div class="panel-body" style="max-height:150px;overflow-y:auto;padding:.6rem 1rem">
-            <?php foreach(array_slice(array_reverse($optoutsData,true),0,5,true) as $ph=>$o): ?>
-            <div style="display:flex;justify-content:space-between;padding:.28rem 0;border-bottom:1px solid var(--border)">
-              <span style="font-size:.76rem;color:var(--text-dim)"><?= esc($o['phone']??$ph) ?></span>
-              <span style="font-size:.67rem;color:var(--text-muted)"><?= isset($o['date'])?(new DateTimeImmutable($o['date']))->format('d/m H:i'):'—' ?></span>
-            </div>
-            <?php endforeach; ?>
-          </div>
-        </div>
+    <?php if (canSee('envios')): ?>
+    <div class="section" id="sec-envios">
+      <div class="sub-tabs">
+        <button class="sub-tab on" data-target="env-overview" onclick="showSub(this)">Visão Geral</button>
+        <?php if (!isViewer()): ?>
+        <button class="sub-tab" data-target="env-disparo" onclick="showSub(this);if(!window._envLoaded)loadEnviosContatos()">Novo Disparo</button>
         <?php endif; ?>
+        <button class="sub-tab" data-target="env-historico" onclick="showSub(this)">Histórico</button>
       </div>
-      <div class="panel">
-        <div class="panel-hd"><span class="panel-title">Histórico de disparos</span><span class="count-badge"><?= count($logs) ?></span></div>
-        <?php if(empty($logs)): ?><div class="empty-msg">Nenhum disparo registrado</div>
-        <?php else: foreach($logs as $lg): $ck=($lg['channel']??'')==='email'?'eml':'wpp'; ?>
-        <div class="log-row">
-          <div class="log-ch <?= $ck ?>"><?php if($ck==='wpp'): ?><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round"/></svg><?php else: ?><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg><?php endif; ?></div>
-          <div style="flex:1"><div class="log-dt"><?= strtoupper($lg['channel']??'—') ?></div><div class="log-mt"><?= fdt($lg['started_at']??'') ?></div></div>
-          <div class="log-rt">
-            <span class="log-sent"><?= $lg['sent']??0 ?>/<?= $lg['total']??0 ?></span>
-            <span style="font-size:.67rem;color:var(--gold);display:block"><?= rate($lg['sent']??0,$lg['total']??0) ?></span>
-            <?php if(($lg['failed']??0)>0): ?><span class="log-fail"><?= $lg['failed'] ?> falha(s)</span><?php endif; ?>
+
+      <div id="env-overview" class="sub-sec">
+        <div class="stats" style="margin-bottom:1.1rem">
+          <div class="stat"><div class="stat-val"><?= $enviosTotal ?></div><div class="stat-lbl">Contatos</div></div>
+          <div class="stat"><div class="stat-val" style="<?= $totalOptouts>0?'color:var(--red)':'' ?>"><?= $totalOptouts ?></div><div class="stat-lbl">Opt-outs</div></div>
+          <div class="stat"><div class="stat-val"><?= $enviosTotal>0?round($totalOptouts/$enviosTotal*100,1).'%':'—' ?></div><div class="stat-lbl">Taxa opt-out</div></div>
+          <div class="stat"><div class="stat-val"><?= count($logs) ?></div><div class="stat-lbl">Disparos</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem;margin-bottom:.875rem">
+          <div class="panel">
+            <div class="panel-hd"><span class="panel-title">Ações rápidas</span></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:.5rem">
+              <?php if (!isViewer()): ?>
+              <button class="btn btn-gold" onclick="document.querySelector('[data-target=env-disparo]')?.click()">Compor novo disparo</button>
+              <?php endif; ?>
+              <button class="btn btn-outline" onclick="showSec('amigos');document.querySelector('[data-target=ami-listas]')?.click()">Ver listas de contatos</button>
+            </div>
+          </div>
+          <?php if(!empty($optoutsData)): ?>
+          <div class="panel">
+            <div class="panel-hd"><span class="panel-title">Opt-outs recentes</span><span class="count-badge"><?= $totalOptouts ?></span></div>
+            <div class="panel-body" style="max-height:150px;overflow-y:auto;padding:.6rem 1rem">
+              <?php foreach(array_slice(array_reverse($optoutsData,true),0,5,true) as $ph=>$o): ?>
+              <div style="display:flex;justify-content:space-between;padding:.28rem 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:.76rem;color:var(--text-dim)"><?= esc($o['phone']??$ph) ?></span>
+                <span style="font-size:.67rem;color:var(--text-muted)"><?= isset($o['date'])?(new DateTimeImmutable($o['date']))->format('d/m H:i'):'—' ?></span>
+              </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <?php if (!isViewer()): ?>
+      <div id="env-disparo" class="sub-sec" style="display:none">
+        <div style="display:grid;grid-template-columns:260px 1fr;gap:.875rem;align-items:start">
+
+          <!-- PAINEL DE FILTROS -->
+          <div class="panel">
+            <div class="panel-hd"><span class="panel-title">Público Alvo</span></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:.8rem">
+
+              <div>
+                <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem">Fonte</div>
+                <div style="display:flex;gap:.3rem">
+                  <button class="flt-btn on" id="disp-src-listas" onclick="setDispSource('listas')">Listas</button>
+                  <button class="flt-btn" id="disp-src-amigos" onclick="setDispSource('amigos')">Amigos</button>
+                </div>
+              </div>
+
+              <!-- Filtros: Listas -->
+              <div id="disp-listas-filters" style="display:flex;flex-direction:column;gap:.8rem">
+                <div>
+                  <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem">Lista</div>
+                  <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+                    <button class="flt-btn on" id="disp-lst-nt" onclick="setDispLista('novo-tempo',this)">Novo Tempo</button>
+                    <button class="flt-btn" id="disp-lst-cr" onclick="setDispLista('conectados-run',this)">Conectados Run</button>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem">Bairro</div>
+                  <select id="disp-f-bairro" onchange="applyEnvDispFilters()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.5rem .7rem;color:var(--text);font-size:.82rem;font-family:inherit;outline:none">
+                    <option value="">Todos</option>
+                  </select>
+                </div>
+                <div>
+                  <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem">Religião</div>
+                  <select id="disp-f-religiao" onchange="applyEnvDispFilters()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.5rem .7rem;color:var(--text);font-size:.82rem;font-family:inherit;outline:none">
+                    <option value="">Todas</option>
+                  </select>
+                </div>
+                <div>
+                  <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem">Sexo</div>
+                  <div style="display:flex;gap:.3rem">
+                    <button class="flt-btn on" id="disp-sx-all" onclick="setDispSexo('')">Todos</button>
+                    <button class="flt-btn" id="disp-sx-m" onclick="setDispSexo('Masculino')">Masc.</button>
+                    <button class="flt-btn" id="disp-sx-f" onclick="setDispSexo('Feminino')">Fem.</button>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem">VIP</div>
+                  <div style="display:flex;gap:.3rem">
+                    <button class="flt-btn on" id="disp-vip-all" onclick="setDispVip('')">Todos</button>
+                    <button class="flt-btn" id="disp-vip-y" onclick="setDispVip('Sim')">Apenas VIP</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Filtros: Amigos -->
+              <div id="disp-amigos-filters" style="display:none;flex-direction:column;gap:.8rem">
+                <div>
+                  <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem">Classificação</div>
+                  <select id="disp-f-class" onchange="applyEnvDispFilters()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.5rem .7rem;color:var(--text);font-size:.82rem;font-family:inherit;outline:none">
+                    <option value="">Todas</option>
+                    <option value="batizado">Batizados</option>
+                    <option value="candidato">Candidatos</option>
+                    <option value="estudo_biblico">Estudo Bíblico</option>
+                    <option value="interessado">Interessados</option>
+                    <option value="oracao">Oração</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="padding:.65rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);text-align:center">
+                <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:.15rem">Contatos selecionados</div>
+                <div style="font-size:1.5rem;font-weight:700;color:var(--gold)" id="env-disp-total">…</div>
+                <div style="font-size:.65rem;color:var(--text-muted)" id="env-disp-total-note">excluindo opt-outs</div>
+              </div>
+
+              <button class="btn btn-outline btn-sm" onclick="resetEnvFilters()">Limpar filtros</button>
+            </div>
+          </div>
+
+          <!-- PAINEL DE COMPOSIÇÃO -->
+          <div class="panel">
+            <div class="panel-hd"><span class="panel-title">Compor Mensagem</span></div>
+            <div class="panel-body">
+              <div class="form-row">
+                <label>Nome do disparo <span style="color:var(--red)">*</span></label>
+                <input type="text" id="env-disp-name" placeholder="Ex: Culto de domingo, Convite para retiro...">
+              </div>
+              <div class="form-row">
+                <label>Canal</label>
+                <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+                  <button class="flt-btn on" id="ch-wpp"   onclick="setDispChannel('whatsapp')">WhatsApp</button>
+                  <button class="flt-btn"    id="ch-email" onclick="setDispChannel('email')">E-mail</button>
+                  <button class="flt-btn"    id="ch-both"  onclick="setDispChannel('both')">Ambos</button>
+                </div>
+                <div id="env-ch-info" style="font-size:.75rem;color:var(--text-muted);margin-top:.35rem"></div>
+              </div>
+              <div class="form-row" id="env-subject-row" style="display:none">
+                <label>Assunto (E-mail)</label>
+                <input type="text" id="env-disp-subject" placeholder="Assunto da mensagem">
+              </div>
+              <div class="form-row">
+                <label>Mensagem</label>
+                <textarea id="env-disp-msg" style="min-height:160px" placeholder="Olá {nome}, tudo bem?&#10;&#10;..."></textarea>
+                <div style="margin-top:.4rem;display:flex;gap:.4rem">
+                  <button class="btn-icon" title="Inserir {nome}" onclick="insertTag('{nome}')">🏷️ {nome}</button>
+                  <button class="btn-icon" title="Inserir {bairro}" onclick="insertTag('{bairro}')">📍 {bairro}</button>
+                </div>
+              </div>
+              <div style="margin-top:1rem;display:flex;gap:.75rem">
+                <button class="btn btn-gold" style="padding:.7rem 2rem" onclick="startEnviosDisparo()">Iniciar Disparo</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <div id="env-historico" class="sub-sec" style="display:none">
+        <div class="panel">
+          <div class="panel-hd"><span class="panel-title">Histórico de disparos</span><span class="count-badge"><?= count($logs) ?></span></div>
+          <div class="panel-body">
+            <?php if(empty($logs)): ?><div class="empty-msg">Nenhum disparo registrado</div>
+            <?php else: foreach($logs as $lg): $ck=($lg['channel']??'')==='email'?'eml':'wpp'; ?>
+            <div class="log-row">
+              <div class="log-ch <?= $ck ?>"><?php if($ck==='wpp'): ?><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round"/></svg><?php else: ?><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg><?php endif; ?></div>
+              <div style="flex:1">
+                <div class="log-dt"><?= esc($lg['name'] ?? '') ?: strtoupper($lg['channel']??'—') ?></div>
+                <div class="log-mt"><?= strtoupper($lg['channel']??'—') ?> · <?= fdt($lg['started_at']??'') ?></div>
+              </div>
+              <div class="log-rt">
+                <span class="log-sent"><?= $lg['sent']??0 ?>/<?= $lg['total']??0 ?></span>
+                <span style="font-size:.67rem;color:var(--gold);display:block"><?= rate($lg['sent']??0,$lg['total']??0) ?></span>
+                <?php if(($lg['failed']??0)>0): ?><span class="log-fail"><?= $lg['failed'] ?> falha(s)</span><?php endif; ?>
+              </div>
+            </div>
+            <?php endforeach; endif; ?>
           </div>
         </div>
-        <?php endforeach; endif; ?>
       </div>
     </div>
     <?php endif; ?>
@@ -727,183 +1155,165 @@ body{margin:0;padding:0}
     <!-- ═══════════════════════════════════════════ -->
     <?php if (canSee('site')): ?>
     <div class="section" id="sec-site">
-      <div class="panel">
-        <div class="panel-hd"><span class="panel-title">Todos os sistemas</span></div>
-        <div class="panel-body" style="padding:.75rem">
-          <?php
-          $sysCards = [
-            ['icon'=>'globe','name'=>'Página Principal','desc'=>'Landing page da Comunidade Ser com links para todos os sistemas.','links'=>[['/','']]],
-            ['icon'=>'users','name'=>'App — Membros','desc'=>'Portal dos membros com perfil, fotos e automações de aniversário. Backend via Directus CMS.','links'=>[['/app/','Portal'],['app/admin.html','Admin']]],
-            ['icon'=>'heart','name'=>'Amigos','desc'=>'Cadastros classificados, eventos com confirmação via WhatsApp e check-in por QR Code.','links'=>[['/amigos/','Portal'],['/amigos/dashboard.php','Dashboard'],['/amigos/checkin.php','Check-in']]],
-            ['icon'=>'wifi','name'=>'Zap','desc'=>'Disparos em massa WhatsApp e e-mail com controle de opt-out e histórico.','links'=>[['/zap/','Transmissão']]],
-          ];
-          $icons = [
-            'globe'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>',
-            'users'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>',
-            'heart'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>',
-            'wifi'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>',
-          ];
-          foreach($sysCards as $sc): ?>
-          <div class="site-card">
-            <div class="site-card-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><?= $icons[$sc['icon']] ?></svg></div>
-            <div>
-              <div class="site-card-name"><?= $sc['name'] ?></div>
-              <div class="site-card-desc"><?= $sc['desc'] ?></div>
-              <div class="site-card-links">
-                <?php foreach($sc['links'] as [$href,$label]): ?>
-                <a href="<?= $href ?>" class="link-ext" target="_blank"><?= $label ?: 'Abrir' ?> ↗</a>
-                <?php endforeach; ?>
-              </div>
-            </div>
+      <div class="sub-tabs">
+        <button class="sub-tab on" data-target="site-overview" onclick="showSub(this)">Visão Geral</button>
+        <?php if(!isViewer()): ?>
+        <button class="sub-tab" data-target="site-botoes" onclick="showSub(this);loadSiteLinks()">Botões</button>
+        <button class="sub-tab" data-target="site-social" onclick="showSub(this);loadSiteLinks()">Redes Sociais</button>
+        <?php endif; ?>
+      </div>
+
+      <div id="site-overview" class="sub-sec">
+        <div class="panel">
+          <div class="panel-hd"><span class="panel-title">comunidadeser.com</span>
+            <a href="/" class="btn btn-outline btn-sm" target="_blank" style="text-decoration:none">Abrir Site ↗</a>
           </div>
-          <?php endforeach; ?>
-        </div>
-      </div>
-    </div>
-    <?php endif; ?>
-
-
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- USUÁRIOS (superadmin)                        -->
-    <!-- ═══════════════════════════════════════════ -->
-    <?php if (isSA()): ?>
-    <div class="section" id="sec-usuarios">
-      <?php $allUsers = loadUsers(); ?>
-
-      <div class="panel">
-        <div class="panel-hd">
-          <span class="panel-title">Usuários do sistema</span>
-          <button class="btn btn-gold btn-sm" onclick="openUserForm()">+ Novo usuário</button>
-        </div>
-        <div class="tbl-wrap">
-          <table class="tbl">
-            <thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Sistemas</th><th>Status</th><th>Ações</th></tr></thead>
-            <tbody>
-              <?php foreach($allUsers as $u): ?>
-              <tr>
-                <td style="font-weight:500;color:var(--text)"><?= esc($u['nome']) ?></td>
-                <td style="color:var(--text-muted);font-size:.78rem"><?= esc($u['usuario']) ?></td>
-                <td><span class="rbdg rbdg-<?= esc($u['role']) ?>"><?= roleLbl($u['role']) ?></span></td>
-                <td style="max-width:none">
-                  <?php foreach($u['sistemas']??[] as $s): ?>
-                  <span class="schip schip-<?= $s ?>"><?= $s ?></span>
-                  <?php endforeach; ?>
-                </td>
-                <td><span style="font-size:.78rem;font-weight:500;color:<?= $u['ativo']?'var(--green)':'var(--red)' ?>"><?= $u['ativo']?'Ativo':'Inativo' ?></span></td>
-                <td style="display:flex;gap:.3rem;max-width:none">
-                  <button class="btn btn-outline btn-xs"
-                    onclick="editUser(<?= esc(json_encode(['id'=>$u['id'],'nome'=>$u['nome'],'usuario'=>$u['usuario'],'role'=>$u['role'],'sistemas'=>$u['sistemas'],'ativo'=>$u['ativo']])) ?>)">
-                    Editar
-                  </button>
-                  <?php if($u['id']!==(me()['id']??'')): ?>
-                  <form method="POST" style="display:inline" onsubmit="return confirm('Excluir <?= esc(addslashes($u['nome'])) ?>?')">
-                    <input type="hidden" name="acao" value="del_user">
-                    <input type="hidden" name="id" value="<?= esc($u['id']) ?>">
-                    <button type="submit" class="btn btn-outline btn-xs" style="color:var(--red)">Excluir</button>
-                  </form>
-                  <?php endif; ?>
-                </td>
-              </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Formulário add/edit -->
-      <div class="panel" id="user-form-panel" style="display:none">
-        <div class="panel-hd">
-          <span class="panel-title" id="user-form-title">Novo usuário</span>
-          <button class="btn btn-outline btn-sm" onclick="closeUserForm()">Cancelar</button>
-        </div>
-        <div class="panel-body">
-          <form method="POST" id="user-form">
-            <input type="hidden" name="acao" id="user-form-acao" value="add_user">
-            <input type="hidden" name="id"   id="user-id">
-            <div class="form-grid">
-              <div class="f-row">
-                <label>Nome completo</label>
-                <input type="text" name="nome" id="user-nome" placeholder="Nome do usuário" required>
-              </div>
-              <div class="f-row">
-                <label>Usuário (login)</label>
-                <input type="text" name="usuario" id="user-usuario" placeholder="ex: joao.silva" autocomplete="off" required>
-              </div>
-              <div class="f-row">
-                <label>Senha <span id="senha-hint" style="color:var(--text-muted);font-weight:400;text-transform:none">(mín. 6 caracteres)</span></label>
-                <input type="password" name="senha" id="user-senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
-              </div>
-              <div class="f-row">
-                <label>Perfil de acesso</label>
-                <select name="role" id="user-role">
-                  <option value="admin">Admin</option>
-                  <option value="viewer">Visualização (somente leitura)</option>
-                  <option value="superadmin">Superadmin (acesso total)</option>
-                </select>
-              </div>
-              <div class="f-row c2">
-                <label>Sistemas permitidos</label>
-                <div class="ckbox-group">
-                  <?php foreach(['app'=>'App — Membros','amigos'=>'Amigos','zap'=>'Zap','site'=>'Site'] as $sv=>$sl): ?>
-                  <label class="ckbox-item"><input type="checkbox" name="sistemas[]" value="<?= $sv ?>" id="sis-<?= $sv ?>"> <?= $sl ?></label>
-                  <?php endforeach; ?>
-                </div>
-              </div>
-              <div class="f-row">
-                <label class="ckbox-item" style="gap:.5rem">
-                  <input type="checkbox" name="ativo" id="user-ativo" value="1" checked> Usuário ativo
-                </label>
-              </div>
-            </div>
-            <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.5rem">
-              <button type="button" class="btn btn-outline" onclick="closeUserForm()">Cancelar</button>
-              <button type="submit" class="btn btn-gold">Salvar</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <div class="panel" style="margin-top:.875rem">
-        <div class="panel-hd"><span class="panel-title">Hierarquia de perfis</span></div>
-        <div class="panel-body">
-          <div style="display:flex;flex-direction:column;gap:.75rem">
-            <?php foreach([
-              ['superadmin','Superadmin','Acesso total: todos os sistemas, gestão de usuários, editor do site.'],
-              ['admin','Admin','Acesso aos sistemas definidos. Pode operar (enviar, editar) dentro do escopo permitido.'],
-              ['viewer','Visualização','Acesso somente leitura nos sistemas permitidos. Não pode realizar ações.'],
-            ] as [$r,$l,$d]): ?>
-            <div style="display:flex;align-items:flex-start;gap:.75rem">
-              <span class="rbdg rbdg-<?= $r ?>" style="flex-shrink:0;margin-top:1px"><?= $l ?></span>
-              <span style="font-size:.8rem;color:var(--text-dim)"><?= $d ?></span>
+          <div class="panel-body" style="padding:.75rem">
+            <?php foreach([['Membros','/app/'],['Amigos','/amigos/'],['Envios','/envios/']] as [$n,$p]): ?>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .5rem;border-bottom:1px solid var(--border)">
+              <span style="font-size:.88rem"><?= $n ?></span>
+              <a href="<?= $p ?>" target="_blank" style="font-size:.7rem;color:var(--gold);text-decoration:none">Acessar ↗</a>
             </div>
             <?php endforeach; ?>
           </div>
         </div>
       </div>
+
+      <?php if(!isViewer()): ?>
+      <div id="site-botoes" class="sub-sec" style="display:none">
+        <div class="panel">
+          <div class="panel-hd">
+            <span class="panel-title">Botões da Página Principal</span>
+            <button class="btn btn-gold btn-sm" onclick="openSiteLinkModal()">+ Novo Botão</button>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead><tr><th>Texto</th><th>URL</th><th>Destaque</th><th>Ações</th></tr></thead>
+                <tbody id="site-btns-list"><tr><td colspan="4" class="empty-msg">Carregando...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="site-social" class="sub-sec" style="display:none">
+        <div class="panel">
+          <div class="panel-hd"><span class="panel-title">Redes Sociais</span></div>
+          <div class="panel-body">
+            <div class="form-row">
+              <label>Instagram</label>
+              <input type="text" id="ed-social-insta" placeholder="https://instagram.com/...">
+            </div>
+            <div class="form-row">
+              <label>YouTube</label>
+              <input type="text" id="ed-social-yt" placeholder="https://youtube.com/...">
+            </div>
+            <div style="margin-top:1rem">
+              <button class="btn btn-gold" style="padding:.65rem 2rem" onclick="saveSocialLinks()">Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <?php endif; ?>
     </div>
     <?php endif; ?>
 
-
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- EDITOR DO SITE                              -->
-    <!-- ═══════════════════════════════════════════ -->
-    <?php if (canSee('site') && !isViewer()): ?>
-    <div class="section" id="sec-editor">
+    <?php if (isSA()): ?>
+    <div class="section" id="sec-usuarios">
       <div class="panel">
         <div class="panel-hd">
-          <span class="panel-title">Editor — index.html (raiz)</span>
-          <a href="/" class="link-ext" target="_blank">Visualizar site ↗</a>
+          <span class="panel-title">Gestão de Usuários</span>
+          <button class="btn btn-gold btn-sm" onclick="openUserForm()">+ Novo Usuário</button>
         </div>
         <div class="panel-body">
-          <p style="font-size:.78rem;color:var(--text-muted);margin:0 0 .875rem">
-            Edita diretamente o <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:.76rem">/index.html</code> da raiz do site. Salve com cuidado.
-          </p>
-          <form method="POST">
-            <input type="hidden" name="acao" value="save_index">
-            <textarea name="html_content" class="code-editor" spellcheck="false"><?= esc($indexHtml) ?></textarea>
-            <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:.875rem">
-              <a href="/" class="btn btn-outline" target="_blank">Visualizar ↗</a>
-              <button type="submit" class="btn btn-gold" onclick="return confirm('Salvar alterações no index.html?')">Salvar alterações</button>
+          <div class="tbl-wrap" style="margin-top:0">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Usuário</th>
+                  <th>Role</th>
+                  <th>Sistemas</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach (loadUsers() as $u): ?>
+                <tr>
+                  <td><strong><?= esc($u['nome']) ?></strong></td>
+                  <td><?= esc($u['usuario']) ?></td>
+                  <td><span class="rbdg rbdg-<?= esc($u['role']) ?>"><?= roleLbl($u['role']) ?></span></td>
+                  <td>
+                    <?php foreach ($u['sistemas'] ?? [] as $s): ?>
+                    <span class="schip schip-<?= esc($s) ?>"><?= ucfirst($s) ?></span>
+                    <?php endforeach; ?>
+                  </td>
+                  <td><?= $u['ativo'] ? '<span class="badge bdg-ongoing">Ativo</span>' : '<span class="badge bdg-past">Inativo</span>' ?></td>
+                  <td>
+                    <div class="actions">
+                      <button class="btn-icon gold" onclick='editUser(<?= json_encode($u) ?>)' title="Editar">✏️</button>
+                      <form method="POST" style="display:inline" onsubmit="return confirm('Excluir este usuário?')">
+                        <input type="hidden" name="acao" value="del_user">
+                        <input type="hidden" name="id" value="<?= esc($u['id']) ?>">
+                        <button type="submit" class="btn-icon red" title="Excluir">🗑️</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="user-form-panel" class="panel" style="display:none;margin-top:1.5rem">
+        <div class="panel-hd"><span class="panel-title" id="user-form-title">Novo usuário</span><button class="modal-close" onclick="closeUserForm()" style="position:static;font-size:1.1rem">✕</button></div>
+        <div class="panel-body">
+          <form method="POST" id="user-form">
+            <input type="hidden" name="acao" id="user-form-acao" value="add_user">
+            <input type="hidden" name="id" id="user-id">
+            
+            <div class="form-grid">
+              <div class="f-row">
+                <label>Nome Completo</label>
+                <input type="text" name="nome" id="user-nome" required>
+              </div>
+              <div class="f-row">
+                <label>Usuário (Login)</label>
+                <input type="text" name="usuario" id="user-usuario" required>
+              </div>
+              <div class="f-row">
+                <label>Senha <small id="senha-hint" style="text-transform:none;opacity:.7"></small></label>
+                <input type="password" name="senha" id="user-senha">
+              </div>
+              <div class="f-row">
+                <label>Nível de Acesso</label>
+                <select name="role" id="user-role">
+                  <option value="admin">Administrador</option>
+                  <option value="superadmin">Super-Administrador</option>
+                  <option value="viewer">Apenas Visualização</option>
+                </select>
+              </div>
+              <div class="f-row c2">
+                <label>Sistemas Permitidos</label>
+                <div class="ckbox-group">
+                  <label class="ckbox-item"><input type="checkbox" name="sistemas[]" value="app" id="sis-app"> App</label>
+                  <label class="ckbox-item"><input type="checkbox" name="sistemas[]" value="amigos" id="sis-amigos"> Amigos</label>
+                  <label class="ckbox-item"><input type="checkbox" name="sistemas[]" value="envios" id="sis-envios"> Envios</label>
+                  <label class="ckbox-item"><input type="checkbox" name="sistemas[]" value="site" id="sis-site"> Site</label>
+                </div>
+              </div>
+              <div class="f-row">
+                <label class="ckbox-item" style="margin-top:1rem"><input type="checkbox" name="ativo" id="user-ativo" checked> Usuário Ativo</label>
+              </div>
+            </div>
+
+            <div style="margin-top:1.5rem;display:flex;gap:.75rem;justify-content:flex-end">
+              <button type="button" class="btn btn-outline" onclick="closeUserForm()">Cancelar</button>
+              <button type="submit" class="btn btn-gold" style="padding-left:2rem;padding-right:2rem">Salvar Usuário</button>
             </div>
           </form>
         </div>
@@ -915,12 +1325,449 @@ body{margin:0;padding:0}
 </div><!-- /layout -->
 <?php endif; ?>
 
+<!-- MODAL: AMIGOS (ADD/EDIT) -->
+<div class="overlay" id="ov-amigos" onclick="if(event.target===this)closeAmiModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAmiModal()">✕</button>
+    <h2 id="ami-modal-title">Novo cadastro</h2>
+    <form id="ami-form">
+      <input type="hidden" id="ami-wpp-orig">
+      <div class="form-row">
+        <label>Nome completo</label>
+        <input type="text" id="ami-nome" required>
+      </div>
+      <div class="form-row">
+        <label>E-mail</label>
+        <input type="email" id="ami-email">
+      </div>
+      <div class="form-row">
+        <label>WhatsApp (somente números)</label>
+        <input type="tel" id="ami-wpp" required>
+      </div>
+      <div class="form-row">
+        <label>Classificação</label>
+        <select id="ami-classificacao">
+          <option value="interessado">Interessado</option>
+          <option value="estudo_biblico">Estudo Bíblico</option>
+          <option value="candidato">Candidato</option>
+          <option value="batizado">Batizado</option>
+          <option value="oracao">Oração</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeAmiModal()">Cancelar</button>
+        <button type="submit" class="btn btn-gold">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: AMIGOS EVENTOS (ADD/EDIT) -->
+<div class="overlay" id="ov-ami-event" onclick="if(event.target===this)closeAmiEvModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAmiEvModal()">✕</button>
+    <h2 id="ami-ev-modal-title">Novo evento</h2>
+    <form id="ami-ev-form">
+      <input type="hidden" id="ami-ev-id">
+      <div class="form-row">
+        <label>Título do Evento</label>
+        <input type="text" id="ami-ev-titulo" required>
+      </div>
+      <div class="form-row">
+        <label>Descrição</label>
+        <textarea id="ami-ev-descricao"></textarea>
+      </div>
+      <div class="form-grid">
+        <div class="f-row">
+          <label>Início</label>
+          <input type="datetime-local" id="ami-ev-inicio" required>
+        </div>
+        <div class="f-row">
+          <label>Fim</label>
+          <input type="datetime-local" id="ami-ev-fim">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Local</label>
+        <input type="text" id="ami-ev-local">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeAmiEvModal()">Cancelar</button>
+        <button type="submit" class="btn btn-gold">Salvar Evento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: SITE BOTÃO (ADD/EDIT) -->
+<div class="overlay" id="ov-site-btn" onclick="if(event.target===this)closeSiteLinkModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeSiteLinkModal()">✕</button>
+    <h2 id="site-btn-title">Novo Botão</h2>
+    <form id="site-btn-form">
+      <input type="hidden" id="site-btn-id-orig">
+      <div class="form-row">
+        <label>ID (slug, sem espaços)</label>
+        <input type="text" id="site-btn-id" placeholder="btn-custom" pattern="[a-z0-9_-]+" required>
+      </div>
+      <div class="form-row">
+        <label>Texto do Botão</label>
+        <input type="text" id="site-btn-text" required>
+      </div>
+      <div class="form-row">
+        <label>URL</label>
+        <input type="text" id="site-btn-url" placeholder="https:// ou /caminho" required>
+      </div>
+      <div class="form-row">
+        <label class="ckbox-item" style="margin-top:.5rem">
+          <input type="checkbox" id="site-btn-featured"> Botão em destaque
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeSiteLinkModal()">Cancelar</button>
+        <button type="submit" class="btn btn-gold">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: ENVIOS STATUS -->
+<div class="overlay" id="ov-env-status" onclick="if(event.target===this)closeEnvStatus()">
+  <div class="modal">
+    <h2 id="env-st-title">Disparo em andamento</h2>
+    <div style="margin:1.5rem 0">
+      <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;font-size:.85rem">
+        <span id="env-st-processed">0 / 0</span>
+        <span id="env-st-pct">0%</span>
+      </div>
+      <div style="height:8px;background:var(--surface2);border-radius:10px;overflow:hidden;border:1px solid var(--border)">
+        <div id="env-st-bar" style="height:100%;background:var(--gold);width:0%;transition:width .3s"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:1rem">
+        <div style="background:var(--surface2);padding:.6rem;border-radius:8px;text-align:center">
+          <div style="font-size:.65rem;color:var(--text-muted);text-transform:uppercase">Enviados</div>
+          <div id="env-st-sent" style="font-size:1.2rem;font-weight:600;color:var(--green)">0</div>
+        </div>
+        <div style="background:var(--surface2);padding:.6rem;border-radius:8px;text-align:center">
+          <div style="font-size:.65rem;color:var(--text-muted);text-transform:uppercase">Falhas</div>
+          <div id="env-st-failed" style="font-size:1.2rem;font-weight:600;color:var(--red)">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gold" id="btn-env-st-close" style="display:none" onclick="closeEnvStatus()">Concluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ENVIOS CONTATO (EDITAR) -->
+<div class="overlay" id="ov-env-contato" onclick="if(event.target===this)closeEnvContatoModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeEnvContatoModal()">✕</button>
+    <h2>Editar Contato</h2>
+    <form id="env-contato-form">
+      <input type="hidden" id="env-ct-idx">
+      <div class="form-grid">
+        <div class="f-row"><label>Nome</label><input type="text" id="env-ct-nome"></div>
+        <div class="f-row"><label>Telefone</label><input type="text" id="env-ct-tel"></div>
+        <div class="f-row"><label>Bairro</label><input type="text" id="env-ct-bairro"></div>
+        <div class="f-row"><label>Religião</label><input type="text" id="env-ct-religiao"></div>
+        <div class="f-row"><label>Sexo</label>
+          <select id="env-ct-sexo" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:.7rem .9rem;color:var(--text);font-size:.9rem;font-family:inherit;outline:none">
+            <option value="">—</option>
+            <option value="M">Masculino</option>
+            <option value="F">Feminino</option>
+          </select>
+        </div>
+        <div class="f-row"><label>Idade</label><input type="text" id="env-ct-idade"></div>
+        <div class="f-row c2"><label>E-mail</label><input type="email" id="env-ct-email"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeEnvContatoModal()">Cancelar</button>
+        <button type="submit" class="btn btn-gold">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── MEMBROS: EDITAR MEMBRO ─────────────────────────────── -->
+<div class="overlay" id="ov-mb-edit" onclick="if(event.target===this)mbCloseEdit()">
+  <div class="modal" style="max-width:680px;padding:0;overflow:hidden">
+    <div class="mb-edit-layout">
+      <div class="mb-edit-side">
+        <div class="mb-photo-ring" onclick="document.getElementById('mb-file-input').click()">
+          <img id="mb-edit-photo" src="" alt="">
+          <div class="mb-photo-ov"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg></div>
+        </div>
+        <div id="mb-edit-name" class="mb-edit-name">—</div>
+        <div style="font-size:.62rem;color:var(--gold);text-transform:uppercase;letter-spacing:.08em">Painel de Edição</div>
+        <input type="file" id="mb-file-input" style="display:none" accept="image/*">
+        <button onclick="mbCloseEdit()" class="btn btn-outline btn-sm" style="margin-top:.5rem">Fechar</button>
+      </div>
+      <div class="mb-edit-form">
+        <div class="mb-edit-body">
+          <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem">Contato</div>
+          <div class="g2">
+            <div class="mb-fr fr"><label>E-mail</label><input id="mb-inp-email" type="email"></div>
+            <div class="mb-fr fr"><label>WhatsApp</label><input id="mb-inp-whats" type="text" placeholder="DDD + Número"></div>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:.875rem 0">
+          <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem">Localização</div>
+          <div class="g2">
+            <div class="mb-fr fr"><label>CEP</label><input id="mb-inp-cep" type="text" maxlength="9"></div>
+            <div class="mb-fr fr c2"><label>Logradouro</label><input id="mb-inp-street" type="text"></div>
+            <div class="mb-fr fr"><label>Número</label><input id="mb-inp-number" type="text"></div>
+            <div class="mb-fr fr"><label>UF</label><input id="mb-inp-state" type="text" maxlength="2" style="text-transform:uppercase"></div>
+            <div class="mb-fr fr c2"><label>Bairro</label><input id="mb-inp-nbhd" type="text"></div>
+            <div class="mb-fr fr c2"><label>Cidade</label><input id="mb-inp-city" type="text"></div>
+          </div>
+        </div>
+        <div style="padding:1rem 1.25rem;border-top:1px solid var(--border)">
+          <button class="btn btn-gold" style="width:100%;padding:.75rem" onclick="mbSaveMember()">Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MEMBROS: MENSAGEM DIRETA ───────────────────────────── -->
+<div class="overlay" id="ov-mb-direct" onclick="if(event.target===this)mbCloseDirectMsg()">
+  <div class="modal" style="max-width:440px">
+    <h2 style="color:var(--green)">Mensagem Individual</h2>
+    <div id="mb-direct-target" style="font-size:.82rem;color:var(--text-muted);margin-bottom:1rem">—</div>
+    <button class="modal-close" onclick="mbCloseDirectMsg()">✕</button>
+    <div class="form-row">
+      <label>Mensagem</label>
+      <textarea id="mb-direct-text" rows="5" placeholder="Digite a mensagem…"></textarea>
+    </div>
+    <button class="btn btn-gold" style="width:100%;margin-top:.5rem" onclick="mbSendDirectMsg()">Enviar Agora</button>
+  </div>
+</div>
+
+<!-- ── MEMBROS: RECORTAR FOTO ─────────────────────────────── -->
+<div class="overlay" id="ov-mb-crop">
+  <div class="modal" style="max-width:480px">
+    <h2 style="text-align:center">Ajustar Foto</h2>
+    <div id="mb-crop-container"></div>
+    <div style="display:flex;gap:.75rem">
+      <button class="btn btn-outline" style="flex:1" onclick="mbCloseCrop()">Cancelar</button>
+      <button class="btn btn-gold" style="flex:1" onclick="mbSaveCrop()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MEMBROS: COMUNICADO GERAL ──────────────────────────── -->
+<div class="overlay" id="ov-mb-broadcast" onclick="if(event.target===this)mbCloseBroadcast()">
+  <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
+    <h2>Comunicado Geral</h2>
+    <button class="modal-close" onclick="mbCloseBroadcast()">✕</button>
+    <div class="mb-tog">
+      <button class="mb-tog-opt on" id="mb-tab-wpp" onclick="mbSwitchBroadcastTab('WHATSAPP')">WhatsApp</button>
+      <button class="mb-tog-opt" id="mb-tab-email" onclick="mbSwitchBroadcastTab('EMAIL')">E-mail</button>
+    </div>
+    <div id="mb-email-fields" style="display:none">
+      <div class="form-row"><label>Assunto</label><input type="text" id="mb-broadcast-subject"></div>
+    </div>
+    <div class="form-row">
+      <label>Mensagem</label>
+      <div style="margin-bottom:.4rem">
+        <button type="button" onclick="mbInsertTag('mb-broadcast-message','{nome}')" class="btn-icon" style="width:auto;padding:2px 10px;font-size:.72rem">{nome}</button>
+      </div>
+      <textarea id="mb-broadcast-message" rows="5"></textarea>
+    </div>
+    <div class="mb-sched">
+      <div class="mb-sched-row">
+        <label for="mb-check-sched">Agendar envio?</label>
+        <input type="checkbox" id="mb-check-sched" onchange="mbToggleSched()">
+      </div>
+      <div id="mb-sched-fields" style="display:none;margin-top:.75rem">
+        <input type="datetime-local" id="mb-broadcast-date" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .8rem;color:var(--text);font-family:inherit;outline:none">
+      </div>
+    </div>
+    <div class="mb-prog" id="mb-prog-wrap" style="display:none">
+      <div class="mb-prog-head"><span>Enviando…</span><span id="mb-prog-text">0 / 0</span></div>
+      <div class="mb-prog-bar"><div id="mb-prog-fill" class="mb-prog-fill"></div></div>
+    </div>
+    <button class="btn btn-gold" style="width:100%;margin-top:1rem;padding:.75rem" onclick="mbTriggerBroadcast()">Confirmar</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
 <script>
-const SECS   = ['overview','app','amigos','zap','site','usuarios','editor'];
-const TITLES = {overview:'Visão Geral',app:'App — Membros',amigos:'Amigos',zap:'Zap',site:'Site',usuarios:'Usuários',editor:'Editor do Site'};
+// Lógica de Amigos: Cadastros
+async function saveAmigo(e) {
+    e.preventDefault();
+    const action = document.getElementById('ami-wpp-orig').value ? 'amigos_edit' : 'amigos_add';
+    const payload = {
+        wpp_original: document.getElementById('ami-wpp-orig').value,
+        nome: document.getElementById('ami-nome').value,
+        email: document.getElementById('ami-email').value,
+        wpp: document.getElementById('ami-wpp').value,
+        classificacao: document.getElementById('ami-classificacao').value
+    };
+    const res = await fetch('api.php?action=' + action, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+        showToast('success', 'Cadastro salvo!');
+        closeAmiModal();
+        loadAmigosCadastros();
+    }
+}
+document.getElementById('ami-form')?.addEventListener('submit', saveAmigo);
+
+function openAmiAdd() {
+    document.getElementById('ami-modal-title').textContent = 'Novo cadastro';
+    document.getElementById('ami-wpp-orig').value = '';
+    document.getElementById('ami-form').reset();
+    document.getElementById('ov-amigos').classList.add('open');
+}
+function closeAmiModal() { document.getElementById('ov-amigos').classList.remove('open'); }
+
+function editAmigoIdx(idx) {
+    const data = window._amiData[idx];
+    if (!data) return;
+    document.getElementById('ami-modal-title').textContent = 'Editar cadastro';
+    document.getElementById('ami-wpp-orig').value = data.wpp;
+    document.getElementById('ami-nome').value = data.nome;
+    document.getElementById('ami-email').value = data.email || '';
+    document.getElementById('ami-wpp').value = data.wpp;
+    document.getElementById('ami-classificacao').value = data.classificacao;
+    document.getElementById('ov-amigos').classList.add('open');
+}
+
+async function deleteAmigo(wpp) {
+    if (!confirm('Excluir este cadastro?')) return;
+    const res = await fetch('api.php?action=amigos_delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({wpp})
+    });
+    if (res.ok) { showToast('success', 'Cadastro removido'); loadAmigosCadastros(); }
+}
+
+// Lógica de Amigos: Eventos
+async function saveAmiEvent(e) {
+    e.preventDefault();
+    const payload = {
+        id: document.getElementById('ami-ev-id').value,
+        titulo: document.getElementById('ami-ev-titulo').value,
+        descricao: document.getElementById('ami-ev-descricao').value,
+        data_inicio: document.getElementById('ami-ev-inicio').value,
+        data_fim: document.getElementById('ami-ev-fim').value,
+        local: document.getElementById('ami-ev-local').value
+    };
+    const res = await fetch('api.php?action=amigos_eventos_save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+        showToast('success', 'Evento salvo!');
+        closeAmiEvModal();
+        location.reload(); // Recarrega para atualizar a lista de eventos (que é via PHP)
+    }
+}
+document.getElementById('ami-ev-form')?.addEventListener('submit', saveAmiEvent);
+
+function openAmiEvAdd() {
+    document.getElementById('ami-ev-modal-title').textContent = 'Novo evento';
+    document.getElementById('ami-ev-id').value = '';
+    document.getElementById('ami-ev-form').reset();
+    document.getElementById('ov-ami-event').classList.add('open');
+}
+function closeAmiEvModal() { document.getElementById('ov-ami-event').classList.remove('open'); }
+
+function editAmiEvent(data) {
+    document.getElementById('ami-ev-modal-title').textContent = 'Editar evento';
+    document.getElementById('ami-ev-id').value = data.id;
+    document.getElementById('ami-ev-titulo').value = data.titulo;
+    document.getElementById('ami-ev-descricao').value = data.descricao || '';
+    document.getElementById('ami-ev-inicio').value = data.data_inicio;
+    document.getElementById('ami-ev-fim').value = data.data_fim || '';
+    document.getElementById('ami-ev-local').value = data.local || '';
+    document.getElementById('ov-ami-event').classList.add('open');
+}
+
+async function deleteAmiEvent(id) {
+    if (!confirm('Excluir este evento permanentemente?')) return;
+    const res = await fetch('api.php?action=amigos_eventos_delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id})
+    });
+    if (res.ok) { showToast('success', 'Evento excluído'); location.reload(); }
+}
+
+// Memória global
+window._amiData = [];
+window._envData = [];
+window._currentEnvList = 'novo-tempo';
+window._amiClass = '';
+window._dispSource = 'listas';
+window._dispLista  = 'novo-tempo';
+
+// Re-renderizar tabelas
+async function loadAmigosCadastros() {
+    const list = document.getElementById('ami-membros-list');
+    if (!list) return;
+    try {
+        const r = await fetch('api.php?action=amigos_cadastros');
+        const data = await r.json();
+        window._amiData = data;
+        window._amiLoaded = true;
+        renderAmiContatos(data);
+    } catch(e) { list.innerHTML = '<tr><td colspan="4" class="empty-msg" style="color:var(--red)">Erro ao carregar</td></tr>'; }
+}
+
+function renderAmiContatos(data) {
+    const list = document.getElementById('ami-membros-list');
+    if (!list) return;
+    if (!data.length) { list.innerHTML = '<tr><td colspan="4" class="empty-msg">Nenhum cadastro</td></tr>'; return; }
+    list.innerHTML = data.map((c) => {
+        const i = window._amiData.indexOf(c);
+        return `<tr>
+            <td><strong>${c.nome || '—'}</strong></td>
+            <td>${c.wpp || '—'}</td>
+            <td><span class="badge" style="background:var(--surface2);border:1px solid var(--border)">${c.classificacao || '—'}</span></td>
+            <td>
+                <div class="actions">
+                    <button class="btn-icon gold" onclick='editAmigoIdx(${i})' title="Editar">✏️</button>
+                    <button class="btn-icon red" onclick="deleteAmigo('${c.wpp}')" title="Excluir">🗑️</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function filterAmiContatos() {
+    const q  = (document.getElementById('ami-search')?.value || '').toLowerCase();
+    const cl = window._amiClass;
+    const fil = window._amiData.filter(c => {
+        if (cl && (c.classificacao || '') !== cl) return false;
+        if (q && !(
+            (c.nome||'').toLowerCase().includes(q) ||
+            (c.wpp||'').toLowerCase().includes(q) ||
+            (c.email||'').toLowerCase().includes(q)
+        )) return false;
+        return true;
+    });
+    renderAmiContatos(fil);
+}
+
+function setAmiClass(cl, btn) {
+    window._amiClass = cl;
+    document.querySelectorAll('#ami-membros .flt-btn').forEach(b => b.classList.remove('on'));
+    if (btn) btn.classList.add('on');
+    filterAmiContatos();
+}
+
+const SECS   = ['overview','app','amigos','eventos','envios','site','usuarios'];
+const TITLES = {overview:'Visão Geral',app:'Membros',amigos:'Amigos',eventos:'Eventos',envios:'Envios',site:'Site',usuarios:'Usuários'};
 
 function showSec(id) {
     if (!document.getElementById('sec-' + id)) return;
@@ -932,12 +1779,424 @@ function showSec(id) {
     if (t) t.textContent = TITLES[id] || id;
     closeSb();
     window.scrollTo(0, 0);
+
+    if (id === 'envios' && !window._envLoaded) loadEnviosContatos();
+    if (id === 'amigos' && !window._amiLoaded) loadAmigosCadastros();
+    if (id === 'app'    && !window._mbLoaded)  mbEnsureData();
+}
+
+function showSub(btn) {
+    const parent = btn.closest('.section');
+    const target = btn.dataset.target;
+    parent.querySelectorAll('.sub-tab').forEach(b => b.classList.toggle('on', b === btn));
+    parent.querySelectorAll('.sub-sec').forEach(s => s.style.display = s.id === target ? 'block' : 'none');
+}
+
+async function changeEnvList(list, btn) {
+    window._currentEnvList = list;
+    document.querySelectorAll('#env-list-selector .btn').forEach(b => b.classList.toggle('on', b === btn));
+    loadEnviosContatos();
+}
+
+async function loadEnviosContatos() {
+    const list = document.getElementById('env-contatos-list');
+    if (!list) return;
+    list.innerHTML = '<tr><td colspan="6" class="empty-msg">Carregando contatos...</td></tr>';
+    try {
+        const r = await fetch(`api.php?action=envios_contatos&file=${window._currentEnvList}`);
+        const data = await r.json();
+        window._envData = data.map((c, i) => ({...c, _idx: i}));
+        window._envLoaded = true;
+        renderEnvContatos(window._envData);
+        populateEnvFilters();
+    } catch(e) { list.innerHTML = '<tr><td colspan="6" class="empty-msg" style="color:var(--red)">Erro ao carregar contatos</td></tr>'; }
+}
+
+function renderEnvContatos(data) {
+    const list = document.getElementById('env-contatos-list');
+    if (!data.length) { list.innerHTML = '<tr><td colspan="6" class="empty-msg">Nenhum contato</td></tr>'; return; }
+
+    list.innerHTML = data.slice(0, 100).map((c) => `
+        <tr>
+            <td><strong>${c.nome || '—'}</strong></td>
+            <td>${c.bairro || '—'}</td>
+            <td>${c.religiao || '—'}</td>
+            <td><span style="color:var(--green)">${c.telefone || '—'}</span></td>
+            <td>${c.opt_out ? '<span class="badge bdg-past">Opt-out</span>' : '<span class="badge bdg-ongoing">Ativo</span>'}</td>
+            <td>
+                <div class="actions">
+                    <button class="btn-icon gold" title="Editar" onclick="editEnvContato(${c._idx})">✏️</button>
+                    <button class="btn-icon${c.opt_out ? ' gold' : ''}" title="${c.opt_out ? 'Reativar' : 'Opt-out'}" onclick="toggleEnvOptout(${c._idx})">${c.opt_out ? '✅' : '🚫'}</button>
+                </div>
+            </td>
+        </tr>
+    `).join('') + (data.length > 100 ? `<tr><td colspan="6" style="text-align:center;padding:.5rem;font-size:.75rem;color:var(--text-muted)">+ ${data.length - 100} registros ocultos (use a busca)</td></tr>` : '');
+
+    const activeCount = window._envData.filter(c => !c.opt_out).length;
+    const totalEl = document.getElementById('env-disp-total');
+    if (totalEl) totalEl.textContent = activeCount;
+}
+
+function filterEnvContatos() {
+    const q = document.getElementById('env-search').value.toLowerCase();
+    const fil = !q ? window._envData : window._envData.filter(c =>
+        (c.nome||'').toLowerCase().includes(q) ||
+        (c.bairro||'').toLowerCase().includes(q) ||
+        (c.religiao||'').toLowerCase().includes(q) ||
+        (c.telefone||'').toLowerCase().includes(q)
+    );
+    renderEnvContatos(fil);
+}
+
+// Eventos: filtro por status
+function filterEventos(st, btn) {
+    document.querySelectorAll('#sec-eventos .flt-btn').forEach(b => b.classList.toggle('on', b === btn));
+    document.querySelectorAll('#ev-list .ev-card').forEach(card => {
+        card.style.display = (st === 'all' || card.dataset.evSt === st) ? 'block' : 'none';
+    });
+}
+
+// Envios: filtros de disparo
+window._dispSexo    = '';
+window._dispVip     = '';
+window._dispChannel = 'whatsapp';
+
+function setDispChannel(ch) {
+    window._dispChannel = ch;
+    document.getElementById('ch-wpp')?.classList.toggle('on', ch === 'whatsapp');
+    document.getElementById('ch-email')?.classList.toggle('on', ch === 'email');
+    document.getElementById('ch-both')?.classList.toggle('on', ch === 'both');
+    const subjectRow = document.getElementById('env-subject-row');
+    if (subjectRow) subjectRow.style.display = (ch === 'email' || ch === 'both') ? '' : 'none';
+    updateEnvChInfo();
+}
+
+function updateEnvChInfo() {
+    const el = document.getElementById('env-ch-info');
+    if (!el) return;
+    const contacts = window._dispFiltered ?? [];
+    if (!contacts.length) { el.textContent = ''; return; }
+    const isAmigos = window._dispSource === 'amigos';
+    const wppField  = isAmigos ? 'wpp' : 'telefone';
+    const withWpp   = contacts.filter(c => c[wppField]).length;
+    const withEmail = contacts.filter(c => c.email).length;
+    const parts = [];
+    if (window._dispChannel !== 'email') parts.push(`${withWpp} com WhatsApp`);
+    if (window._dispChannel !== 'whatsapp') parts.push(`${withEmail} com e-mail`);
+    el.textContent = parts.join(' · ');
+}
+
+function setDispSource(src) {
+    window._dispSource = src;
+    document.getElementById('disp-src-listas')?.classList.toggle('on', src === 'listas');
+    document.getElementById('disp-src-amigos')?.classList.toggle('on', src === 'amigos');
+    const lf = document.getElementById('disp-listas-filters');
+    const af = document.getElementById('disp-amigos-filters');
+    if (lf) lf.style.display = src === 'listas' ? 'flex' : 'none';
+    if (af) af.style.display = src === 'amigos' ? 'flex' : 'none';
+    const note = document.getElementById('env-disp-total-note');
+    if (note) note.textContent = src === 'amigos' ? 'de amigos cadastrados' : 'excluindo opt-outs';
+    if (src === 'amigos' && !window._amiLoaded) {
+        loadAmigosCadastros().then(() => applyEnvDispFilters());
+    } else {
+        applyEnvDispFilters();
+    }
+}
+
+async function setDispLista(lista, btn) {
+    window._dispLista = lista;
+    document.getElementById('disp-lst-nt')?.classList.toggle('on', lista === 'novo-tempo');
+    document.getElementById('disp-lst-cr')?.classList.toggle('on', lista === 'conectados-run');
+    // Se a lista atual do painel não coincide, recarrega
+    if (window._currentEnvList !== lista) {
+        window._currentEnvList = lista;
+        window._envLoaded = false;
+        await loadEnviosContatos();
+    } else {
+        applyEnvDispFilters();
+    }
+}
+
+function populateEnvFilters() {
+    if (!window._envData || !window._envData.length) return;
+    const bairros   = [...new Set(window._envData.map(c => c.bairro).filter(Boolean))].sort();
+    const religioes = [...new Set(window._envData.map(c => c.religiao).filter(Boolean))].sort();
+    const sel1 = document.getElementById('disp-f-bairro');
+    const sel2 = document.getElementById('disp-f-religiao');
+    if (sel1) { const cur = sel1.value; sel1.innerHTML = '<option value="">Todos</option>' + bairros.map(v => `<option value="${v}"${v===cur?' selected':''}>${v}</option>`).join(''); }
+    if (sel2) { const cur = sel2.value; sel2.innerHTML = '<option value="">Todas</option>' + religioes.map(v => `<option value="${v}"${v===cur?' selected':''}>${v}</option>`).join(''); }
+    applyEnvDispFilters();
+}
+
+function applyEnvDispFilters() {
+    if (window._dispSource === 'amigos') {
+        const cl = document.getElementById('disp-f-class')?.value || '';
+        window._dispFiltered = (window._amiData || []).filter(c => {
+            if (cl && (c.classificacao || '') !== cl) return false;
+            return true;
+        });
+    } else {
+        const bairro   = document.getElementById('disp-f-bairro')?.value   || '';
+        const religiao = document.getElementById('disp-f-religiao')?.value || '';
+        window._dispFiltered = (window._envData || []).filter(c => {
+            if (c.opt_out) return false;
+            if (bairro   && (c.bairro   || '') !== bairro)   return false;
+            if (religiao && (c.religiao || '') !== religiao) return false;
+            if (window._dispSexo && (c.sexo || '') !== window._dispSexo) return false;
+            if (window._dispVip  && (c.vip  || '') !== window._dispVip)  return false;
+            return true;
+        });
+    }
+    const el = document.getElementById('env-disp-total');
+    if (el) el.textContent = window._dispFiltered.length;
+    updateEnvChInfo();
+}
+
+function setDispSexo(v) {
+    window._dispSexo = v;
+    document.getElementById('disp-sx-all')?.classList.toggle('on', !v);
+    document.getElementById('disp-sx-m')?.classList.toggle('on', v === 'Masculino');
+    document.getElementById('disp-sx-f')?.classList.toggle('on', v === 'Feminino');
+    applyEnvDispFilters();
+}
+
+function setDispVip(v) {
+    window._dispVip = v;
+    document.getElementById('disp-vip-all')?.classList.toggle('on', !v);
+    document.getElementById('disp-vip-y')?.classList.toggle('on', !!v);
+    applyEnvDispFilters();
+}
+
+function resetEnvFilters() {
+    const s1 = document.getElementById('disp-f-bairro');
+    const s2 = document.getElementById('disp-f-religiao');
+    const s3 = document.getElementById('disp-f-class');
+    if (s1) s1.value = '';
+    if (s2) s2.value = '';
+    if (s3) s3.value = '';
+    setDispSexo('');
+    setDispVip('');
+}
+
+async function startEnviosDisparo() {
+    const name    = (document.getElementById('env-disp-name')?.value || '').trim();
+    const msg     = document.getElementById('env-disp-msg').value;
+    const subject = document.getElementById('env-disp-subject')?.value || '';
+    const channel = window._dispChannel || 'whatsapp';
+    const raw     = window._dispFiltered ?? (window._envData || []).filter(c => !c.opt_out);
+    if (!name) return alert('Dê um nome para este disparo antes de enviar.');
+    if (!msg)  return alert('Digite a mensagem.');
+    if (!raw.length) return alert('Nenhum contato no público selecionado.');
+    if (!confirm(`Iniciar disparo "${name}" para ${raw.length} contato(s) via ${channel}?`)) return;
+    // Normaliza: amigos usam 'wpp', listas usam 'telefone'
+    const contacts = raw.map(c => window._dispSource === 'amigos'
+        ? { nome: c.nome, telefone: c.wpp, email: c.email }
+        : c
+    );
+    const res = await fetch('api.php?action=envios_disparar', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name, message: msg, subject, contacts, channel })
+    });
+    if (res.ok) { const data = await res.json(); pollEnvStatus(data.token); }
+    else alert('Erro ao iniciar disparo.');
+}
+
+let envPollTimer = null;
+function pollEnvStatus(token) {
+    document.getElementById('ov-env-status').classList.add('open');
+    document.getElementById('btn-env-st-close').style.display = 'none';
+    envPollTimer = setInterval(async () => {
+        const res  = await fetch(`api.php?action=envios_status&token=${token}`);
+        const data = await res.json();
+        const pct  = data.total > 0 ? Math.round(data.processed / data.total * 100) : 0;
+        document.getElementById('env-st-processed').textContent = `${data.processed} / ${data.total}`;
+        document.getElementById('env-st-pct').textContent = `${pct}%`;
+        document.getElementById('env-st-bar').style.width = `${pct}%`;
+        document.getElementById('env-st-sent').textContent   = data.sent;
+        document.getElementById('env-st-failed').textContent = data.failed;
+        if (data.status === 'done' || data.processed >= data.total) {
+            clearInterval(envPollTimer);
+            document.getElementById('btn-env-st-close').style.display = 'block';
+            document.getElementById('env-st-title').textContent = 'Disparo Concluído';
+        }
+    }, 2000);
+}
+function closeEnvStatus() { document.getElementById('ov-env-status').classList.remove('open'); if (envPollTimer) clearInterval(envPollTimer); }
+
+function insertTag(tag) {
+    const el = document.getElementById('env-disp-msg');
+    const s = el.selectionStart, e = el.selectionEnd;
+    el.value = el.value.substring(0, s) + tag + el.value.substring(e);
+    el.focus();
+}
+
+// Lógica de Envios: Editar / Opt-out de contato
+function editEnvContato(idx) {
+    const c = window._envData[idx];
+    if (!c) return;
+    document.getElementById('env-ct-idx').value      = idx;
+    document.getElementById('env-ct-nome').value     = c.nome      || '';
+    document.getElementById('env-ct-tel').value      = c.telefone  || '';
+    document.getElementById('env-ct-bairro').value   = c.bairro    || '';
+    document.getElementById('env-ct-religiao').value = c.religiao  || '';
+    document.getElementById('env-ct-sexo').value     = c.sexo      || '';
+    document.getElementById('env-ct-idade').value    = c.idade     || '';
+    document.getElementById('env-ct-email').value    = c.email     || '';
+    document.getElementById('ov-env-contato').classList.add('open');
+}
+function closeEnvContatoModal() { document.getElementById('ov-env-contato').classList.remove('open'); }
+
+async function saveEnvContato(e) {
+    e.preventDefault();
+    const idx = parseInt(document.getElementById('env-ct-idx').value);
+    const payload = {
+        idx,
+        fields: {
+            nome:     document.getElementById('env-ct-nome').value,
+            telefone: document.getElementById('env-ct-tel').value,
+            bairro:   document.getElementById('env-ct-bairro').value,
+            religiao: document.getElementById('env-ct-religiao').value,
+            sexo:     document.getElementById('env-ct-sexo').value,
+            idade:    document.getElementById('env-ct-idade').value,
+            email:    document.getElementById('env-ct-email').value,
+        }
+    };
+    const res = await fetch('api.php?action=envios_update', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+        showToast('success', 'Contato atualizado!');
+        closeEnvContatoModal();
+        window._envLoaded = false;
+        loadEnviosContatos();
+    } else {
+        showToast('error', 'Erro ao salvar contato.');
+    }
+}
+document.getElementById('env-contato-form')?.addEventListener('submit', saveEnvContato);
+
+async function toggleEnvOptout(idx) {
+    const c = window._envData[idx];
+    if (!c) return;
+    const activate = !!c.opt_out;
+    const msg = activate ? 'Reativar este contato?' : 'Aplicar opt-out a este contato?';
+    if (!confirm(msg)) return;
+    const res = await fetch('api.php?action=envios_optout', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({idx, activate})
+    });
+    if (res.ok) {
+        showToast('success', activate ? 'Contato reativado.' : 'Opt-out aplicado.');
+        window._envLoaded = false;
+        loadEnviosContatos();
+    } else {
+        showToast('error', 'Erro ao atualizar opt-out.');
+    }
+}
+
+// ── Site: botões CRUD ──
+window._siteLinks = null;
+
+async function loadSiteLinks() {
+    try {
+        const r = await fetch('api.php?action=site_links');
+        const d = await r.json();
+        window._siteLinks = d;
+        renderSiteBtns(d.buttons || []);
+        const insta = document.getElementById('ed-social-insta');
+        const yt    = document.getElementById('ed-social-yt');
+        if (insta) insta.value = d.social?.instagram || '';
+        if (yt)    yt.value   = d.social?.youtube   || '';
+    } catch(e) { console.error('Erro ao carregar links do site', e); }
+}
+
+function renderSiteBtns(buttons) {
+    const tbody = document.getElementById('site-btns-list');
+    if (!tbody) return;
+    if (!buttons.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty-msg">Nenhum botão cadastrado</td></tr>'; return; }
+    tbody.innerHTML = buttons.map(b => `
+        <tr>
+            <td><strong>${b.text}</strong></td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;font-size:.78rem;color:var(--text-muted)">${b.url}</td>
+            <td>${b.featured ? '<span class="badge bdg-ongoing">Sim</span>' : '<span class="badge bdg-past">Não</span>'}</td>
+            <td>
+                <div class="actions">
+                    <button class="btn-icon gold" onclick='openSiteLinkModal(${JSON.stringify(b)})' title="Editar">✏️</button>
+                    <button class="btn-icon red" onclick="deleteSiteLink('${b.id}','${b.text}')" title="Excluir">🗑️</button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function openSiteLinkModal(data) {
+    const isEdit = !!data;
+    document.getElementById('site-btn-title').textContent = isEdit ? 'Editar Botão' : 'Novo Botão';
+    document.getElementById('site-btn-id-orig').value   = isEdit ? data.id       : '';
+    document.getElementById('site-btn-id').value        = isEdit ? data.id       : '';
+    document.getElementById('site-btn-text').value      = isEdit ? data.text     : '';
+    document.getElementById('site-btn-url').value       = isEdit ? data.url      : '';
+    document.getElementById('site-btn-featured').checked = isEdit ? !!data.featured : false;
+    document.getElementById('site-btn-id').readOnly     = isEdit;
+    document.getElementById('ov-site-btn').classList.add('open');
+}
+function closeSiteLinkModal() { document.getElementById('ov-site-btn').classList.remove('open'); }
+
+async function saveSiteLink(e) {
+    e.preventDefault();
+    const payload = {
+        id:       document.getElementById('site-btn-id').value.trim(),
+        text:     document.getElementById('site-btn-text').value.trim(),
+        url:      document.getElementById('site-btn-url').value.trim(),
+        featured: document.getElementById('site-btn-featured').checked,
+    };
+    const res = await fetch('api.php?action=site_link_save', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+        const d = await res.json();
+        window._siteLinks = d;
+        renderSiteBtns(d.buttons || []);
+        closeSiteLinkModal();
+        showToast('success', 'Botão salvo!');
+    } else showToast('error', 'Erro ao salvar botão.');
+}
+document.getElementById('site-btn-form')?.addEventListener('submit', saveSiteLink);
+
+async function deleteSiteLink(id, text) {
+    if (!confirm(`Remover o botão "${text}" do site?`)) return;
+    const res = await fetch('api.php?action=site_link_delete', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id})
+    });
+    if (res.ok) {
+        const d = await res.json();
+        window._siteLinks = d;
+        renderSiteBtns(d.buttons || []);
+        showToast('success', 'Botão removido.');
+    } else showToast('error', 'Erro ao remover botão.');
+}
+
+async function saveSocialLinks() {
+    const payload = {
+        instagram: document.getElementById('ed-social-insta')?.value.trim() || '',
+        youtube:   document.getElementById('ed-social-yt')?.value.trim()    || '',
+    };
+    const res = await fetch('api.php?action=site_social_save', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+    if (res.ok) showToast('success', 'Redes sociais atualizadas!');
+    else        showToast('error',   'Erro ao salvar.');
 }
 
 function toggleSb() { document.getElementById('sidebar')?.classList.toggle('open'); document.getElementById('backdrop')?.classList.toggle('show'); }
 function closeSb()  { document.getElementById('sidebar')?.classList.remove('open'); document.getElementById('backdrop')?.classList.remove('show'); }
 
-// Toast
 function showToast(type, msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -946,32 +2205,375 @@ function showToast(type, msg) {
     t._timer = setTimeout(() => t.classList.remove('show'), 4000);
 }
 
-// Flash from server
 <?php if ($flash): ?>
 showToast('<?= esc($flash['type']) ?>', '<?= esc(addslashes($flash['msg'])) ?>');
 <?php endif; ?>
 
-// Membros App (async Directus)
+// ── Membros Admin ─────────────────────────────────────────────────────────────
+const MB_API   = 'https://cms.osmota.org';
+const MB_COL   = 'COMUNIDADE_SER';
+const MB_CFGS  = 'CONFIGURACOES_AUTOMACOES';
+const MB_LOGS  = 'LOGS_AUTOMACOES';
+const MB_SCHED = 'COMUNICACOES_AGENDADAS';
+const MB_EVO   = 'https://evolution.osmota.org';
+const MB_EVO_K = '1E0C076ACE4B-4974-8450-E622B0129B6F';
+const MB_EVO_I = 'ComunidadeSer';
+
+let mbToken        = null;
+let mbMembers      = [];
+let mbEditingId    = null;
+let mbDirectMember = null;
+let mbCroppie      = null;
+let mbBcastMode    = 'WHATSAPP';
+window._mbLoaded   = false;
+
+// Obtém token via sessão dashboard, depois carrega dados
+async function mbEnsureData() {
+    if (window._mbLoaded) return;
+    if (!mbToken) {
+        try {
+            const r = await fetch('/app/token.php', { credentials: 'same-origin' });
+            if (r.ok) {
+                const d = await r.json();
+                if (d.token) mbToken = d.token;
+            }
+        } catch {}
+    }
+    if (mbToken) await mbLoadData();
+    else document.getElementById('mb-members-list').innerHTML = '<div class="empty-msg" style="color:var(--red)">Sem acesso ao Directus. Configure app/config.php.</div>';
+}
+
+async function mbLoadData() {
+    const list = document.getElementById('mb-members-list');
+    if (list) list.innerHTML = '<div class="empty-msg">Carregando…</div>';
+    try {
+        const r = await fetch(`${MB_API}/items/${MB_COL}?limit=-1&sort=NAME`, { headers: { 'Authorization': `Bearer ${mbToken}` } });
+        const d = await r.json();
+        mbMembers = d.data || [];
+        window._mbLoaded = true;
+        mbRenderMembers(mbMembers);
+    } catch { if (list) list.innerHTML = '<div class="empty-msg" style="color:var(--red)">Erro de conexão com Directus.</div>'; }
+}
+
+function mbRenderMembers(members) {
+    const el = document.getElementById('mb-stat-total');  if (el) el.textContent = mbMembers.length;
+    const ep = document.getElementById('mb-stat-photo');  if (ep) ep.textContent = mbMembers.filter(m => m.PHOTO).length;
+    const ew = document.getElementById('mb-stat-whats');  if (ew) ew.textContent = mbMembers.filter(m => m.WHATS).length;
+    const ec = document.getElementById('mb-stat-cep');    if (ec) ec.textContent = mbMembers.filter(m => m.STREET).length;
+    const lc = document.getElementById('mb-list-count');  if (lc) lc.textContent = members.length;
+    const list = document.getElementById('mb-members-list');
+    if (!list) return;
+    if (!members.length) { list.innerHTML = '<div class="empty-msg">Nenhum membro encontrado.</div>'; return; }
+    list.innerHTML = members.map(m => `
+        <div class="mb-row">
+            <div class="mb-info" onclick="mbOpenEdit(${m.id})">
+                <img src="${m.PHOTO ? MB_API+'/assets/'+m.PHOTO+'?width=80&height=80&fit=cover' : 'https://ui-avatars.com/api/?name='+encodeURIComponent(m.NAME)+'&background=1e3a8a&color=fff&size=80'}" class="mb-avatar">
+                <div style="min-width:0">
+                    <div class="mb-name">${m.NAME || '—'}</div>
+                    <div class="mb-city">${m.CITY || 'S/ Cidade'}</div>
+                </div>
+            </div>
+            <div class="mb-act">
+                ${m.WHATS ? `<button onclick="mbOpenDirectMsg(${m.id})" class="mb-act-btn wpp" title="Mensagem direta"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg></button>` : ''}
+                <button onclick="mbOpenEdit(${m.id})" class="mb-act-btn" title="Editar"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function mbFilterMembers(q) {
+    const t = q.toLowerCase();
+    const f = t ? mbMembers.filter(m =>
+        (m.NAME  || '').toLowerCase().includes(t) ||
+        (m.EMAIL || '').toLowerCase().includes(t) ||
+        (m.CITY  || '').toLowerCase().includes(t)
+    ) : mbMembers;
+    mbRenderMembers(f);
+}
+
+// Edit modal
+function mbOpenEdit(id) {
+    const m = mbMembers.find(x => x.id === id);
+    if (!m) return;
+    mbEditingId = id;
+    document.getElementById('mb-edit-name').textContent = m.NAME || '—';
+    document.getElementById('mb-edit-photo').src = m.PHOTO
+        ? `${MB_API}/assets/${m.PHOTO}?width=240&height=240&fit=cover`
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(m.NAME)}&background=1e3a8a&color=fff&size=200`;
+    document.getElementById('mb-inp-email').value  = m.EMAIL || '';
+    let wpp = m.WHATS || '';
+    if (wpp.startsWith('55')) wpp = wpp.substring(2);
+    document.getElementById('mb-inp-whats').value  = wpp;
+    document.getElementById('mb-inp-cep').value    = m.CEP    || '';
+    document.getElementById('mb-inp-street').value = m.STREET || '';
+    document.getElementById('mb-inp-number').value = m.NUMBER || '';
+    document.getElementById('mb-inp-nbhd').value   = m.NEIGHBORHOOD || '';
+    document.getElementById('mb-inp-city').value   = m.CITY   || '';
+    document.getElementById('mb-inp-state').value  = m.STATE  || '';
+    document.getElementById('ov-mb-edit').classList.add('open');
+}
+function mbCloseEdit() { document.getElementById('ov-mb-edit').classList.remove('open'); }
+
+document.getElementById('mb-inp-cep')?.addEventListener('input', async function(e) {
+    let v = e.target.value.replace(/\D/g, '');
+    if (v.length > 5) v = v.substring(0, 5) + '-' + v.substring(5, 8);
+    e.target.value = v;
+    if (v.length === 9) {
+        try {
+            const r = await fetch(`https://viacep.com.br/ws/${v.replace('-','')}/json/`);
+            const d = await r.json();
+            if (!d.erro) {
+                document.getElementById('mb-inp-street').value = d.logradouro || '';
+                document.getElementById('mb-inp-nbhd').value   = d.bairro     || '';
+                document.getElementById('mb-inp-city').value   = d.localidade || '';
+                document.getElementById('mb-inp-state').value  = d.uf         || '';
+                document.getElementById('mb-inp-number').focus();
+            }
+        } catch {}
+    }
+});
+
+async function mbSaveMember() {
+    if (!mbEditingId) return;
+    let wpp = document.getElementById('mb-inp-whats').value.replace(/\D/g, '');
+    if (wpp && !wpp.startsWith('55')) wpp = '55' + wpp;
+    const p = {
+        EMAIL: document.getElementById('mb-inp-email').value.trim(),
+        WHATS: wpp,
+        CEP: document.getElementById('mb-inp-cep').value.trim(),
+        STREET: document.getElementById('mb-inp-street').value.trim(),
+        NUMBER: document.getElementById('mb-inp-number').value.trim(),
+        NEIGHBORHOOD: document.getElementById('mb-inp-nbhd').value.trim(),
+        CITY: document.getElementById('mb-inp-city').value.trim(),
+        STATE: document.getElementById('mb-inp-state').value.trim().toUpperCase(),
+    };
+    try {
+        const r = await fetch(`${MB_API}/items/${MB_COL}/${mbEditingId}`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${mbToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(p) });
+        if (r.ok) {
+            const i = mbMembers.findIndex(x => x.id === mbEditingId);
+            mbMembers[i] = { ...mbMembers[i], ...p };
+            mbRenderMembers(mbMembers);
+            showToast('success', 'Dados salvos!');
+            mbCloseEdit();
+        }
+    } catch { showToast('error', 'Erro ao salvar.'); }
+}
+
+// Photo upload
+document.getElementById('mb-file-input')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) { const reader = new FileReader(); reader.onload = ev => mbOpenCrop(ev.target.result); reader.readAsDataURL(file); }
+});
+function mbOpenCrop(src) {
+    document.getElementById('ov-mb-crop').classList.add('open');
+    if (mbCroppie) mbCroppie.destroy();
+    mbCroppie = new Croppie(document.getElementById('mb-crop-container'), {
+        viewport: { width: 225, height: 300, type: 'square' },
+        boundary: { width: '100%', height: 320 },
+        showZoomer: true,
+    });
+    mbCroppie.bind({ url: src });
+}
+function mbCloseCrop() { document.getElementById('ov-mb-crop').classList.remove('open'); }
+async function mbSaveCrop() {
+    if (!mbCroppie) return;
+    const blob = await mbCroppie.result({ type: 'blob', size: { width: 600, height: 800 }, format: 'jpeg', quality: 0.9 });
+    mbCloseCrop();
+    const fd = new FormData();
+    fd.append('file', blob, 'avatar.jpg');
+    try {
+        const up = await fetch(`${MB_API}/files`, { method: 'POST', headers: { 'Authorization': `Bearer ${mbToken}` }, body: fd });
+        const ud = await up.json();
+        await fetch(`${MB_API}/items/${MB_COL}/${mbEditingId}`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${mbToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ PHOTO: ud.data.id }) });
+        const i = mbMembers.findIndex(m => m.id === mbEditingId);
+        mbMembers[i].PHOTO = ud.data.id;
+        document.getElementById('mb-edit-photo').src = `${MB_API}/assets/${ud.data.id}?width=240&height=240&fit=cover`;
+        mbRenderMembers(mbMembers);
+        showToast('success', 'Foto atualizada!');
+    } catch { showToast('error', 'Erro ao salvar foto.'); }
+}
+
+// Direct message
+function mbOpenDirectMsg(id) {
+    mbDirectMember = mbMembers.find(m => m.id === id);
+    document.getElementById('mb-direct-target').textContent = mbDirectMember?.NAME || '—';
+    document.getElementById('mb-direct-text').value = '';
+    document.getElementById('ov-mb-direct').classList.add('open');
+}
+function mbCloseDirectMsg() { document.getElementById('ov-mb-direct').classList.remove('open'); }
+async function mbSendDirectMsg() {
+    const msg = document.getElementById('mb-direct-text').value.trim();
+    if (!msg) return;
+    try {
+        let num = (mbDirectMember?.WHATS || '').replace(/\D/g, '');
+        if (!num.startsWith('55')) num = '55' + num;
+        const r = await fetch(`${MB_EVO}/message/sendText/${MB_EVO_I}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': MB_EVO_K },
+            body: JSON.stringify({ number: num, text: msg })
+        });
+        if (r.ok) { showToast('success', 'Mensagem enviada!'); mbCloseDirectMsg(); }
+        else showToast('error', 'Erro no envio.');
+    } catch { showToast('error', 'Erro no envio.'); }
+}
+
+// Broadcast
+function mbOpenBroadcast() { mbEnsureData().then(() => document.getElementById('ov-mb-broadcast').classList.add('open')); }
+function mbCloseBroadcast() {
+    document.getElementById('ov-mb-broadcast').classList.remove('open');
+    document.getElementById('mb-prog-wrap').style.display = 'none';
+}
+function mbSwitchBroadcastTab(mode) {
+    mbBcastMode = mode;
+    document.getElementById('mb-tab-wpp')?.classList.toggle('on', mode === 'WHATSAPP');
+    document.getElementById('mb-tab-email')?.classList.toggle('on', mode === 'EMAIL');
+    document.getElementById('mb-email-fields').style.display = mode === 'EMAIL' ? '' : 'none';
+}
+function mbToggleSched() {
+    const on = document.getElementById('mb-check-sched')?.checked;
+    document.getElementById('mb-sched-fields').style.display = on ? '' : 'none';
+}
+async function mbTriggerBroadcast() {
+    const message  = document.getElementById('mb-broadcast-message').value.trim();
+    const subject  = document.getElementById('mb-broadcast-subject')?.value.trim() || '';
+    const isScheduled = document.getElementById('mb-check-sched')?.checked;
+    const schedDate   = document.getElementById('mb-broadcast-date')?.value;
+    if (!message) return showToast('error', 'Escreva uma mensagem.');
+    if (isScheduled && !schedDate) return showToast('error', 'Escolha a data.');
+    if (isScheduled) {
+        try {
+            await fetch(`${MB_API}/items/${MB_SCHED}`, { method: 'POST', headers: { 'Authorization': `Bearer ${mbToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ mensagem: message, assunto: subject, canal: mbBcastMode, data_agendamento: schedDate, status: 'pendente' }) });
+            showToast('success', 'Agendado com sucesso!');
+            mbCloseBroadcast();
+        } catch { showToast('error', 'Erro no agendamento.'); }
+        return;
+    }
+    const channel = mbBcastMode === 'WHATSAPP' ? 'whatsapp' : 'email';
+    const targets = mbMembers.filter(m => channel === 'whatsapp' ? m.WHATS : m.EMAIL);
+    if (!confirm(`Enviar para ${targets.length} membro(s) agora?`)) return;
+    const contacts = targets.map(m => ({ nome: m.NAME, telefone: m.WHATS || '', email: m.EMAIL || '' }));
+    document.getElementById('mb-prog-wrap').style.display = '';
+    document.getElementById('mb-prog-text').textContent = `0 / ${targets.length}`;
+    try {
+        const r = await fetch('/app/disparar.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contacts, message, subject, channel }) });
+        const d = await r.json();
+        if (!d.token) throw new Error(d.error || 'Erro ao enfileirar');
+        const token = d.token, total = d.total;
+        const poll = async () => {
+            try {
+                const sr = await fetch(`/app/disparar.php?status=${token}`);
+                const sd = await sr.json();
+                const pct = total > 0 ? Math.round((sd.processed || 0) / total * 100) : 0;
+                document.getElementById('mb-prog-fill').style.width = `${pct}%`;
+                document.getElementById('mb-prog-text').textContent = `${sd.processed || 0} / ${total}`;
+                if (sd.status === 'done') showToast('success', `Concluído — ${sd.sent} enviado(s)`);
+                else setTimeout(poll, 2000);
+            } catch { setTimeout(poll, 3000); }
+        };
+        setTimeout(poll, 1500);
+    } catch (e) { showToast('error', 'Erro: ' + e.message); }
+}
+
+// Logs
+async function mbLoadLogs() {
+    const list = document.getElementById('mb-logs-list');
+    if (!list) return;
+    if (!mbToken) { await mbEnsureData(); if (!mbToken) return; }
+    list.innerHTML = '<div class="empty-msg">Carregando…</div>';
+    try {
+        const r = await fetch(`${MB_API}/items/${MB_LOGS}?sort=-data_envio&limit=30`, { headers: { 'Authorization': `Bearer ${mbToken}` } });
+        const d = await r.json();
+        if (d.data && d.data.length) {
+            list.innerHTML = d.data.map(l => `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.2rem;border-bottom:1px solid var(--border)">
+                    <div style="display:flex;align-items:center;gap:.6rem;flex:1">
+                        <span class="mb-log-dot ${l.status==='sucesso'?'ok':'err'}"></span>
+                        <div>
+                            <div style="font-size:.85rem;font-weight:600;color:var(--text)">${l.membro_nome || '—'}</div>
+                            <div style="font-size:.7rem;color:var(--text-muted)">${new Date(l.data_envio).toLocaleString('pt-BR')}</div>
+                        </div>
+                    </div>
+                    <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;color:${l.status==='sucesso'?'var(--green)':'var(--red)'}">${l.status}</span>
+                </div>
+            `).join('');
+        } else {
+            list.innerHTML = '<div class="empty-msg">Nenhum log recente.</div>';
+        }
+    } catch { list.innerHTML = '<div class="empty-msg" style="color:var(--red)">Erro ao carregar logs.</div>'; }
+}
+
+// Configs
+async function mbLoadConfigs() {
+    if (!mbToken) { await mbEnsureData(); if (!mbToken) return; }
+    try {
+        const r = await fetch(`${MB_API}/items/${MB_CFGS}`, { headers: { 'Authorization': `Bearer ${mbToken}` } });
+        const d = await r.json();
+        d.data?.forEach(c => {
+            if (c.chave === 'msg_aniversario_whats')  document.getElementById('mb-msg-whats').value = c.valor || '';
+            if (c.chave === 'msg_aniversario_email') {
+                document.getElementById('mb-msg-email-sub').value  = c.auxiliar || '';
+                document.getElementById('mb-msg-email-body').value = c.valor    || '';
+            }
+        });
+    } catch { showToast('error', 'Erro ao carregar ajustes.'); }
+}
+
+async function mbSaveConfigs() {
+    if (!mbToken) return showToast('error', 'Sem token.');
+    const whats     = document.getElementById('mb-msg-whats').value.trim();
+    const emailSub  = document.getElementById('mb-msg-email-sub').value.trim();
+    const emailBody = document.getElementById('mb-msg-email-body').value.trim();
+    try {
+        const r = await fetch(`${MB_API}/items/${MB_CFGS}`, { headers: { 'Authorization': `Bearer ${mbToken}` } });
+        const d = await r.json();
+        for (const c of (d.data || [])) {
+            let payload = {};
+            if (c.chave === 'msg_aniversario_whats') payload = { valor: whats };
+            if (c.chave === 'msg_aniversario_email') payload = { valor: emailBody, auxiliar: emailSub };
+            if (Object.keys(payload).length > 0)
+                await fetch(`${MB_API}/items/${MB_CFGS}/${c.id}`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${mbToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        }
+        showToast('success', 'Ajustes salvos!');
+    } catch { showToast('error', 'Erro ao salvar ajustes.'); }
+}
+
+function mbExportCSV() {
+    if (!mbMembers.length) return;
+    let csv = 'Nome,Email,WhatsApp,Cidade,Estado\n';
+    mbMembers.forEach(m => { csv += `"${m.NAME||''}","${m.EMAIL||''}","${m.WHATS||''}","${m.CITY||''}","${m.STATE||''}"\n`; });
+    const b = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(b), download: 'membros_ser.csv' });
+    a.click();
+}
+
+function mbInsertTag(id, tag) {
+    const ta = document.getElementById(id);
+    if (!ta) return;
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    ta.value = ta.value.slice(0, s) + tag + ta.value.slice(e);
+    ta.selectionStart = ta.selectionEnd = s + tag.length;
+    ta.focus();
+}
+
+// Auto-load stats on page load via static token (overview only)
 async function loadAppMembers() {
     try {
         const r = await fetch('api.php?action=members');
         if (!r.ok) return;
         const d = await r.json();
         if (d.total != null) {
-            ['stat-app-ov','stat-app-m','sc-app'].forEach(id => {
+            ['stat-app-ov','mb-stat-total'].forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.textContent = d.total.toLocaleString('pt-BR');
+                if (el && el.textContent === '…') el.textContent = d.total.toLocaleString('pt-BR');
             });
         }
     } catch {}
 }
 <?php if (canSee('app')): ?>loadAppMembers();<?php endif; ?>
 
-// Seção inicial (após redirects POST)
 const initSec = '<?= esc($_GET['sec'] ?? 'overview') ?>';
 if (initSec !== 'overview') showSec(initSec);
 
-// User form
 function openUserForm() {
     document.getElementById('user-form-title').textContent = 'Novo usuário';
     document.getElementById('user-form-acao').value = 'add_user';
@@ -992,11 +2594,10 @@ function editUser(data) {
     document.getElementById('user-senha').value    = '';
     document.getElementById('senha-hint').textContent = '(deixe em branco para manter)';
     document.getElementById('user-role').value     = data.role;
-    ['app','amigos','zap','site'].forEach(s => {
+    ['app','amigos','envios','site'].forEach(s => {
         const cb = document.getElementById('sis-' + s);
         if (cb) cb.checked = (data.sistemas || []).includes(s);
-    });
-    document.getElementById('user-ativo').checked = !!data.ativo;
+    });    document.getElementById('user-ativo').checked = !!data.ativo;
     document.getElementById('user-form-panel').style.display = 'block';
     document.getElementById('user-form-panel').scrollIntoView({behavior:'smooth',block:'start'});
 }

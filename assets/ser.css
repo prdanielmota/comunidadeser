@@ -292,26 +292,28 @@ input:focus,select:focus,textarea:focus{
 .tab-panel.active{display:block}
 
 /* ── TABELA ── */
-.tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);width:100%;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:.88rem;min-width:900px}
 thead{background:var(--surface2)}
 th{
-  padding:.7rem 1rem;
+  padding:1rem 1.25rem;
   text-align:left;
-  font-size:.72rem;font-weight:600;
-  text-transform:uppercase;letter-spacing:.06em;
+  font-size:.68rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:.12em;
   color:var(--text-muted);
   border-bottom:1px solid var(--border);
   white-space:nowrap;
 }
 td{
-  padding:.75rem 1rem;
+  padding:1.1rem 1.25rem;
   border-bottom:1px solid var(--border);
   color:var(--text-dim);
   vertical-align:middle;
+  transition:background var(--transition), color var(--transition);
 }
 tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--surface2)}
+tr:hover td{background:rgba(255,255,255,0.02);color:var(--text)}
+body.light-mode tr:hover td{background:rgba(0,0,0,0.02)}
 
 /* ── MENSAGENS ── */
 .msg-err{
@@ -353,6 +355,12 @@ tr:hover td{background:var(--surface2)}
 /* ── RESPONSIVO ── */
 @media(max-width:640px){
   .stats{gap:.5rem}
+  .stat-val{font-size:1.4rem}
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tab-btn{white-space:nowrap}
+  th,td{padding:.55rem .75rem}
+}
+
   .stat-val{font-size:1.4rem}
   .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .tab-btn{white-space:nowrap}

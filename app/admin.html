@@ -671,6 +671,24 @@
         if (e.key === 'Escape') { closeEditModal(); closeBroadcastModal(); closeDirectMsgModal(); }
     });
 
+    // Tenta autenticar via sessão da dashboard (app/token.php)
+    (async () => {
+        try {
+            const res = await fetch('/app/token.php', { credentials: 'same-origin' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.token) {
+                    adminToken = data.token;
+                    sessionStorage.setItem('admin_token', adminToken);
+                    initAdmin();
+                    return;
+                }
+            }
+        } catch (_) {}
+        // Sem sessão da dashboard: usa token salvo ou mostra login
+        if (adminToken) initAdmin();
+    })();
+
     function showToast(msg) {
         const t = document.getElementById('toast');
         document.getElementById('toast-msg').innerText = msg;
@@ -975,7 +993,6 @@
         ta.focus();
     }
 
-    if (adminToken) initAdmin();
 </script>
 </body>
 </html>

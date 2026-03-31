@@ -30,7 +30,10 @@
       "Bash(git init:*)",
       "Bash(git config:*)",
       "Bash(git add:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git prune:*)",
+      "Bash(ls:*)"
     ]
   }
 }

@@ -287,7 +287,7 @@ body{padding:1.5rem 1.25rem;}
 .err{margin-top:.8rem;color:var(--red);font-size:.88rem;text-align:center;}
 
 /* topbar/dash — herdado de ser.css */
-.dash{max-width:1100px;margin:0 auto;width:100%;}
+.dash{max-width:1400px;margin:0 auto;width:100%;}
 
 /* tabs — herdado de ser.css */
 
@@ -316,26 +316,12 @@ body{padding:1.5rem 1.25rem;}
 
 /* TABLE */
 .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;overflow-x:auto;width:100%;}
-table{width:100%;border-collapse:collapse;table-layout:fixed;}
-thead th{text-align:left;padding:.5rem .7rem;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);}
-thead th:nth-child(1){width:34px;}
-thead th:nth-child(2){width:34px;}
-thead th:nth-child(3){width:22%;}
-thead th:nth-child(4){width:20%;}
-thead th:nth-child(5){width:100px;}
-thead th:nth-child(6){width:105px;}
-thead th:nth-child(7){width:88px;}
-thead th:nth-child(8){width:148px;}
-tbody tr{border-bottom:1px solid var(--border);transition:background .12s;}
-tbody tr:last-child{border-bottom:none;}
-tbody tr:hover{background:var(--surface2);}
-tbody td{padding:.52rem .7rem;font-size:.86rem;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 tbody td:nth-child(3){white-space:normal;word-break:break-word;}
 .wpp-link{color:var(--gold);font-size:.76rem;display:block;margin-top:.08rem;}
 .date-col{color:var(--text-dim);font-size:.78rem;}
 .email-col{color:var(--text-dim);font-size:.82rem;}
 .empty{text-align:center;padding:3rem 1rem;color:var(--text-muted);}
-.actions-cell{display:flex;gap:.3rem;align-items:center;}
+.actions-cell{display:flex;gap:.35rem;align-items:center;padding-right:1rem;}
 input[type=checkbox]{accent-color:var(--gold);width:15px;height:15px;cursor:pointer;}
 
 /* CLASSIFICATION BADGES */
