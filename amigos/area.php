@@ -1,9 +1,7 @@
 <?php
 session_start();
 
-define('EVO_URL',  'https://evolution.osmota.org');
-define('EVO_KEY',  '1E0C076ACE4B-4974-8450-E622B0129B6F');
-define('EVO_INST', 'ComunidadeSer');
+require_once __DIR__ . '/../app/config.php';
 define('SITE_URL', 'https://comunidadeser.com/amigos');
 
 if (isset($_GET['logout'])) { session_destroy(); header('Location: index.html'); exit; }

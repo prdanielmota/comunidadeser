@@ -1,2 +1,15 @@
-RewriteEngine On
-RewriteRule ^admin$ admin.html [L]
+Options -Indexes
+
+# Negar acesso direto a arquivos sensíveis (logs e configs)
+<FilesMatch "\.(json|log|env|php)$">
+    # Mas permitir o loader do portal
+    <RequireAll>
+        Require all granted
+    </RequireAll>
+</FilesMatch>
+
+# Proteção extra para disparos manuais
+<FilesMatch "^(disparar|worker)\.php$">
+    Require all denied
+    # (Estes scripts devem ser chamados apenas via CLI ou dashboard se houver login neles)
+</FilesMatch>

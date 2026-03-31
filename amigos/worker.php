@@ -2,14 +2,10 @@
 // worker.php — processa disparo WhatsApp em background via CLI
 // Uso: php worker.php <token>
 
-const EVO_URL  = 'https://evolution.osmota.org';
-const EVO_KEY  = '1E0C076ACE4B-4974-8450-E622B0129B6F';
-const EVO_INST = 'ComunidadeSer';
-
-const WA_DELAY_MIN  = 60;   // décimos de segundo entre mensagens (mín)
-const WA_DELAY_MAX  = 140;  // décimos de segundo entre mensagens (máx)
-const WA_BATCH_SIZE = 10;   // pausa a cada N mensagens
-const WA_BATCH_WAIT = 30;   // segundos de pausa entre lotes
+// Carrega configurações globais
+if (file_exists(__DIR__ . '/../app/config.php')) {
+    require_once __DIR__ . '/../app/config.php';
+}
 
 const JOBS_DIR = __DIR__ . '/.jobs';
 const LOGS_DIR = __DIR__ . '/.logs';
@@ -46,7 +42,7 @@ foreach ($contacts as $i => $c) {
     $entry  = ['nome' => $c['nome'], 'whatsapp' => null, 'time' => date('H:i:s')];
     $msg_p  = str_replace('{nome}', explode(' ', trim($c['nome']))[0], $message);
 
-    $wp = normalize_phone($c['telefone'] ?? '');
+    $wp = normalize_phone($c['wpp'] ?? ($c['telefone'] ?? ''));
     if ($wp) {
         $result = send_whatsapp($wp, $msg_p);
         $entry['whatsapp'] = $result === true ? 'ok' : $result;

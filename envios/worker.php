@@ -2,30 +2,10 @@
 // worker.php — processa disparo em background via CLI
 // Uso: php worker.php <token>
 
-// Carrega variáveis de ambiente do projeto (se disponível na raiz do repositório)
-if (file_exists(__DIR__ . '/../app/env_loader.php')) {
-    require_once __DIR__ . '/../app/env_loader.php';
+// Carrega variáveis de ambiente e configurações globais
+if (file_exists(__DIR__ . '/../app/config.php')) {
+    require_once __DIR__ . '/../app/config.php';
 }
-
-define('GMAIL_USER',  'contato@comunidadeser.com');
-define('GMAIL_PASS',  defined('GMAIL_PASS') ? constant('GMAIL_PASS') : '');
-define('GMAIL_NAME',  'Comunidade Ser');
-define('GMAIL_HOST',  'smtp.gmail.com');
-define('GMAIL_PORT',  587);
-
-define('EVO_URL',     'https://evolution.osmota.org');
-define('EVO_KEY',     defined('EVO_KEY') ? constant('EVO_KEY') : '');
-define('EVO_INST',    'ComunidadeSer');
-
-const EMAIL_DELAY_MIN  = 50;
-const EMAIL_DELAY_MAX  = 100;
-const EMAIL_BATCH_SIZE = 15;
-const EMAIL_BATCH_WAIT = 60;
-
-const WA_DELAY_MIN     = 60;
-const WA_DELAY_MAX     = 140;
-const WA_BATCH_SIZE    = 10;
-const WA_BATCH_WAIT    = 30;
 
 const JOBS_DIR = __DIR__ . '/.jobs';
 const LOGS_DIR = __DIR__ . '/.logs';

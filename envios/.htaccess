@@ -1,0 +1,15 @@
+Options -Indexes
+
+# Redirecionar raiz para o dashboard principal
+RewriteEngine On
+RewriteRule ^$ /dashboard/ [R=301,L]
+
+# Negar acesso direto a arquivos JSON
+<FilesMatch "\.json$">
+    Require all denied
+</FilesMatch>
+
+# Permitir acesso a scripts necessários (via proxy ou direto se autenticado)
+<FilesMatch "^(api|disparar|transmissao|webhook|worker|conectados-run)\.php$">
+    Require all granted
+</FilesMatch>

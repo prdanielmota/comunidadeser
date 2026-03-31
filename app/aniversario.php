@@ -11,15 +11,7 @@ const COLECAO         = 'COMUNIDADE_SER';
 const COLECAO_CONFIGS = 'CONFIGURACOES_AUTOMACOES';
 const COLECAO_LOGS    = 'LOGS_AUTOMACOES';
 
-const EVO_URL  = 'https://evolution.osmota.org';
-const EVO_KEY  = '1E0C076ACE4B-4974-8450-E622B0129B6F';
-const EVO_INST = 'ComunidadeSer';
-
-const GMAIL_USER = 'contato@comunidadeser.com';
-const GMAIL_PASS = 'konznitsmttbfsuz';
-const GMAIL_NAME = 'Comunidade Ser';
-const GMAIL_HOST = 'smtp.gmail.com';
-const GMAIL_PORT = 587;
+require_once __DIR__ . '/config.php';
 
 // ── Início ────────────────────────────────────────────────────────────────────
 // ── Autenticação da chamada ───────────────────────────────────────────────────

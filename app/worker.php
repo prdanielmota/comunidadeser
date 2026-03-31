@@ -2,25 +2,10 @@
 // worker.php — processa disparo WhatsApp/Email em background via CLI
 // Uso: php worker.php <token>
 
-const GMAIL_USER  = 'contato@comunidadeser.com';
-const GMAIL_PASS  = 'konznitsmttbfsuz';
-const GMAIL_NAME  = 'Comunidade Ser';
-const GMAIL_HOST  = 'smtp.gmail.com';
-const GMAIL_PORT  = 587;
-
-const EVO_URL     = 'https://evolution.osmota.org';
-const EVO_KEY     = '1E0C076ACE4B-4974-8450-E622B0129B6F';
-const EVO_INST    = 'ComunidadeSer';
-
-const EMAIL_DELAY_MIN  = 50;
-const EMAIL_DELAY_MAX  = 100;
-const EMAIL_BATCH_SIZE = 15;
-const EMAIL_BATCH_WAIT = 60;
-
-const WA_DELAY_MIN     = 60;
-const WA_DELAY_MAX     = 140;
-const WA_BATCH_SIZE    = 10;
-const WA_BATCH_WAIT    = 30;
+// Carrega configurações globais
+if (file_exists(__DIR__ . '/config.php')) {
+    require_once __DIR__ . '/config.php';
+}
 
 const JOBS_DIR = __DIR__ . '/.jobs';
 const LOGS_DIR = __DIR__ . '/.logs';
