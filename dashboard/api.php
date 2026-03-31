@@ -24,7 +24,7 @@ if ($action === 'members') {
     $ch = curl_init('https://cms.osmota.org/items/COMUNIDADE_SER?limit=0&meta=total_count');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER  => true,
-        CURLOPT_HTTPHEADER      => ['Authorization: Bearer 4Rs0w-UajbSunakTHbLpDsdqxsNdSV9B'],
+        CURLOPT_HTTPHEADER      => ['Authorization: Bearer ' . DIRECTUS_TOKEN],
         CURLOPT_TIMEOUT         => 8,
         CURLOPT_CONNECTTIMEOUT  => 4,
         CURLOPT_SSL_VERIFYPEER  => false,
