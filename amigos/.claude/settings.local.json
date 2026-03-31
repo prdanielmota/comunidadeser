@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python3:*)",
-      "Bash(curl -s \"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https%3A%2F%2Fcomunidadeser.com%2Famigos%2F&format=png\" -o /home/u566113111/domains/comunidadeser.com/public_html/amigos/qrcode-site.png)",
-      "Bash(npx skills:*)"
-    ]
-  }
-}
