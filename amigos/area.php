@@ -18,8 +18,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'send_otp') {
     $_SESSION['otp_exp']  = time() + 300;
     $num = str_starts_with($wpp,'55') ? $wpp : '55'.$wpp;
     $msg = "Seu código de verificação para alterar o WhatsApp cadastrado:\n\n🔐 *{$code}*\n\nVálido por 5 minutos. Não compartilhe com ninguém.";
-    $ctx = stream_context_create(['http'=>['method'=>'POST','header'=>"Content-Type: application/json\r\napikey: ".EVO_KEY."\r\n",'content'=>json_encode(['number'=>$num,'text'=>$msg]),'ignore_errors'=>true]]);
-    $res = @file_get_contents(EVO_URL.'/message/sendText/'.EVO_INST, false, $ctx);
+    
+    // Seleciona par instância/chave de forma aleatória
+    $creds = get_evo_credentials();
+    $ctx = stream_context_create(['http'=>['method'=>'POST','header'=>"Content-Type: application/json\r\napikey: {$creds['key']}\r\n",'content'=>json_encode(['number'=>$num,'text'=>$msg]),'ignore_errors'=>true]]);
+    $res = @file_get_contents(EVO_URL.'/message/sendText/'.$creds['instance'], false, $ctx);
     $code_http = isset($http_response_header) ? (int)substr($http_response_header[0], 9, 3) : 0;
     if ($res === false || $code_http >= 400) { echo json_encode(['ok'=>false,'error'=>'Falha ao enviar o código.']); } else { echo json_encode(['ok'=>true]); }
     exit;
@@ -64,8 +67,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'confirm_event') {
             $num      = str_starts_with($user_wpp,'55') ? $user_wpp : '55'.$user_wpp;
             $caption  = "🎉 Presença confirmada!\n\n*{$titulo}*\n📅 {$data_fmt}" . ($local_ev ? "\n📍 {$local_ev}" : '') . "\n\nApresente este QR Code na entrada do evento.";
             $payload  = json_encode(['number'=>$num,'mediatype'=>'image','mimetype'=>'image/png','caption'=>$caption,'media'=>$qr_url,'fileName'=>'confirmacao.png']);
-            $ctx = stream_context_create(['http'=>['method'=>'POST','header'=>"Content-Type: application/json\r\napikey: ".EVO_KEY."\r\n",'content'=>$payload,'ignore_errors'=>true]]);
-            @file_get_contents(EVO_URL.'/message/sendMedia/'.EVO_INST, false, $ctx);
+            
+            // Seleciona par instância/chave de forma aleatória
+            $creds = get_evo_credentials();
+            $ctx = stream_context_create(['http'=>['method'=>'POST','header'=>"Content-Type: application/json\r\napikey: {$creds['key']}\r\n",'content'=>$payload,'ignore_errors'=>true]]);
+            @file_get_contents(EVO_URL.'/message/sendMedia/'.$creds['instance'], false, $ctx);
 
             echo json_encode(['ok'=>true,'token'=>$token]); exit;
         }

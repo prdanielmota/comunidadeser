@@ -97,10 +97,13 @@ foreach ($members as $m) {
     if ($msg_wa && $whats) {
         $num = normalize_phone($whats);
         if ($num) {
+            // Seleciona par instância/chave de forma aleatória
+            $creds = get_evo_credentials();
+
             $texto = str_replace('{nome}', $primeiro, $msg_wa);
-            $res = send_whatsapp($num, $texto);
+            $res = send_whatsapp($num, $texto, $creds['instance'], $creds['key']);
             if ($res === true) {
-                log_cli("  WA ok → $num");
+                log_cli("  WA ok ({$creds['instance']}) → $num");
                 $ok = true;
                 $waCount++;
                 directus_log($token, $m['id'], $nome, 'whatsapp', 'sucesso');
@@ -199,13 +202,13 @@ function normalize_phone(?string $raw): ?string {
     return null;
 }
 
-function send_whatsapp(string $number, string $text): bool|string {
-    $ch = curl_init(EVO_URL . '/message/sendText/' . EVO_INST);
+function send_whatsapp(string $number, string $text, string $instance, string $key): bool|string {
+    $ch = curl_init(EVO_URL . '/message/sendText/' . $instance);
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 20,
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'apikey: ' . EVO_KEY],
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'apikey: ' . $key],
         CURLOPT_POSTFIELDS     => json_encode(['number' => $number, 'text' => $text], JSON_UNESCAPED_UNICODE),
     ]);
     $resp = curl_exec($ch);

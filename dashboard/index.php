@@ -1138,6 +1138,16 @@ body{margin:0;padding:0}
                 </div>
                 <div id="env-ch-info" style="font-size:.75rem;color:var(--text-muted);margin-top:.35rem"></div>
               </div>
+              <div class="form-row" id="env-wpp-inst-row" style="display:<?= (me()['role']??'')==='superadmin'?'block':'none' ?>">
+                <label>Instância WhatsApp (Evolution)</label>
+                <select id="env-disp-instance" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.5rem .7rem;color:var(--text);font-size:.82rem;font-family:inherit;outline:none">
+                  <option value="random">Aleatório (Balanço de Carga)</option>
+                  <?php foreach (EVO_INSTANCES as $inst): ?>
+                  <option value="<?= esc($inst) ?>"><?= esc($inst) ?></option>
+                  <?php endforeach; ?>
+                </select>
+                <div style="font-size:.65rem;color:var(--text-muted);margin-top:.25rem">Selecione uma instância específica ou deixe aleatório.</div>
+              </div>
               <div class="form-row" id="env-subject-row" style="display:none">
                 <label>Assunto (E-mail)</label>
                 <input type="text" id="env-disp-subject" placeholder="Assunto da mensagem">
@@ -2151,24 +2161,33 @@ function resetEnvFilters() {
 }
 
 async function startEnviosDisparo() {
-    const name    = (document.getElementById('env-disp-name')?.value || '').trim();
-    const msg     = document.getElementById('env-disp-msg').value;
-    const subject = document.getElementById('env-disp-subject')?.value || '';
-    const channel = window._dispChannel || 'whatsapp';
-    const raw     = window._dispFiltered ?? (window._envData || []).filter(c => !c.opt_out);
+    const name     = (document.getElementById('env-disp-name')?.value || '').trim();
+    const msg      = document.getElementById('env-disp-msg').value;
+    const subject  = document.getElementById('env-disp-subject')?.value || '';
+    const instance = document.getElementById('env-disp-instance')?.value || 'random';
+    const channel  = window._dispChannel || 'whatsapp';
+    const raw      = window._dispFiltered ?? (window._envData || []).filter(c => !c.opt_out);
+
     if (!name) return alert('Dê um nome para este disparo antes de enviar.');
     if (!msg)  return alert('Digite a mensagem.');
     if (!raw.length) return alert('Nenhum contato no público selecionado.');
-    if (!confirm(`Iniciar disparo "${name}" para ${raw.length} contato(s) via ${channel}?`)) return;
+
+    const confirmMsg = instance === 'random' 
+        ? `Iniciar disparo "${name}" para ${raw.length} contato(s) via ${channel}?`
+        : `Iniciar disparo "${name}" para ${raw.length} contato(s) usando a instância "${instance}"?`;
+
+    if (!confirm(confirmMsg)) return;
+
     // Normaliza campos por fonte
     const contacts = raw.map(c => {
         if (window._dispSource === 'amigos')  return { nome: c.nome,  telefone: c.wpp,   email: c.email };
         if (window._dispSource === 'membros') return { nome: c.NAME,  telefone: c.WHATS, email: c.EMAIL };
         return c;
     });
+
     const res = await fetch('api.php?action=envios_disparar', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ name, message: msg, subject, contacts, channel })
+        body: JSON.stringify({ name, message: msg, subject, contacts, channel, instance })
     });
     if (res.ok) { const data = await res.json(); pollEnvStatus(data.token); }
     else alert('Erro ao iniciar disparo.');

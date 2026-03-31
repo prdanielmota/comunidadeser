@@ -44,13 +44,16 @@ foreach ($contacts as $i => $c) {
 
     $wp = normalize_phone($c['wpp'] ?? ($c['telefone'] ?? ''));
     if ($wp) {
+        // Seleciona par instância/chave de forma aleatória
+        $creds = get_evo_credentials();
+
         // Simular "digitando..."
-        send_presence($wp, 'composing');
+        send_presence($wp, 'composing', $creds['instance'], $creds['key']);
 
         // Aguarda o delay (tempo de digitação)
         usleep(rand(WA_DELAY_MIN, WA_DELAY_MAX) * 100000);
 
-        $result = send_whatsapp($wp, $msg_p);
+        $result = send_whatsapp($wp, $msg_p, $creds['instance'], $creds['key']);
         $entry['whatsapp'] = $result === true ? 'ok' : $result;
         if ($result === true) $sent++; else $failed++;
         $waCount++;
@@ -84,9 +87,9 @@ function write_log(string $token, array $data): void {
 }
 
 // ── Simular presença (digitando...) ──────────────────────────────────────────
-function send_presence(string $number, string $presence): void {
-    if (!defined('EVO_KEY') || !EVO_KEY) return;
-    $url = EVO_URL . '/instance/setPresence/' . EVO_INST;
+function send_presence(string $number, string $presence, string $instance, string $key): void {
+    if (!$key) return;
+    $url = EVO_URL . '/instance/setPresence/' . $instance;
     $ch  = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
@@ -94,7 +97,7 @@ function send_presence(string $number, string $presence): void {
         CURLOPT_TIMEOUT        => 5,
         CURLOPT_HTTPHEADER     => [
             'Content-Type: application/json',
-            'apikey: ' . EVO_KEY,
+            'apikey: ' . $key,
         ],
         CURLOPT_POSTFIELDS => json_encode([
             'presence' => $presence,
@@ -105,8 +108,9 @@ function send_presence(string $number, string $presence): void {
 }
 
 // ── Envio WhatsApp via Evolution API ─────────────────────────────────────────
-function send_whatsapp(string $number, string $text): bool|string {
-    $url = EVO_URL . '/message/sendText/' . EVO_INST;
+function send_whatsapp(string $number, string $text, string $instance, string $key): bool|string {
+    if (!$key) return "Chave da API não configurada";
+    $url = EVO_URL . '/message/sendText/' . $instance;
     $ch  = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
@@ -114,7 +118,7 @@ function send_whatsapp(string $number, string $text): bool|string {
         CURLOPT_TIMEOUT        => 20,
         CURLOPT_HTTPHEADER     => [
             'Content-Type: application/json',
-            'apikey: ' . EVO_KEY,
+            'apikey: ' . $key,
         ],
         CURLOPT_POSTFIELDS => json_encode([
             'number' => $number,
