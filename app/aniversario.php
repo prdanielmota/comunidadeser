@@ -5,7 +5,6 @@
 // ── Configuração ──────────────────────────────────────────────────────────────
 const CRON_KEY = 'ser2026aniv';
 const DIRECTUS_URL   = 'https://cms.osmota.org';
-const DIRECTUS_TOKEN = 'I4b5pP8yFdURnn8mzYPJVvQlEk6LQZv4';
 
 const COLECAO         = 'COMUNIDADE_SER';
 const COLECAO_CONFIGS = 'CONFIGURACOES_AUTOMACOES';
@@ -23,10 +22,7 @@ if (!hash_equals(CRON_KEY, $key)) {
 }
 if (!$isCli) {
     header('Content-Type: text/plain; charset=utf-8');
-    // Permite que o curl receba a resposta sem timeout do browser
-    if (function_exists('fastcgi_finish_request')) {
-        ob_start();
-    }
+    if (function_exists('fastcgi_finish_request')) ob_start();
 }
 
 $hoje   = date('Y-m-d');
@@ -36,6 +32,7 @@ $inicio = microtime(true);
 
 log_cli("=== Aniversários " . date('d/m/Y') . " ===");
 
+// O token agora vem do config.php (via .env)
 $token = DIRECTUS_TOKEN;
 
 // ── 2. Buscar configurações de mensagens ──────────────────────────────────────
