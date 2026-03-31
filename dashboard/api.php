@@ -6,6 +6,8 @@ if (!defined('ROOT')) {
     define('ROOT', dirname(__DIR__));
 }
 
+if (file_exists(ROOT . '/app/config.php')) require_once ROOT . '/app/config.php';
+
 // O dashboard usa $_SESSION['dash_user'] para autenticação
 if (empty($_SESSION['dash_user'])) { 
     http_response_code(401); 
@@ -36,9 +38,16 @@ if ($action === 'members') {
 
 // ── Envios (Contatos & Disparos) ──────────────────────────
 if ($action === 'envios_contatos') {
-    $listName = $_GET['file'] ?? 'novo-tempo';
-    $fileName = ($listName === 'conectados-run') ? 'conectados-run-data.json' : 'novo-tempo.json';
-    $file = ROOT . '/envios/' . $fileName;
+    $slug  = preg_replace('/[^a-z0-9\-]/', '', strtolower($_GET['file'] ?? 'novo-tempo'));
+    $index = file_exists(ROOT . '/envios/listas.json')
+           ? (json_decode(file_get_contents(ROOT . '/envios/listas.json'), true) ?: [])
+           : [];
+    if (isset($index[$slug])) {
+        $file = ROOT . '/envios/' . $index[$slug]['arquivo'];
+    } else {
+        // Fallback para slugs legados sem índice
+        $file = ROOT . '/envios/' . $slug . '.json';
+    }
     if (!file_exists($file)) { echo json_encode([]); exit; }
     echo file_get_contents($file);
     exit;
@@ -252,6 +261,129 @@ if ($action === 'site_social_save') {
     if (!empty($d['youtube']))   $html = preg_replace('/(href=")[^"]*("[^>]*>YouTube<\/a>)/is',   '$1'.$d['youtube'].'$2',   $html);
     file_put_contents($f, $html);
     echo json_encode(siteGetLinks());
+    exit;
+}
+
+// ── Listas (Índice, Importar via IA, Salvar) ──────────────────
+const LISTAS_INDEX = ROOT . '/envios/listas.json';
+
+function loadListasIndex(): array {
+    if (!file_exists(LISTAS_INDEX)) return [
+        'novo-tempo'     => ['nome' => 'Novo Tempo',     'arquivo' => 'novo-tempo.json'],
+        'conectados-run' => ['nome' => 'Conectados Run', 'arquivo' => 'conectados-run-data.json'],
+    ];
+    return json_decode(file_get_contents(LISTAS_INDEX), true) ?: [];
+}
+
+if ($action === 'lista_index') {
+    $listas = loadListasIndex();
+    $result = [];
+    foreach ($listas as $slug => $meta) {
+        $file  = ROOT . '/envios/' . $meta['arquivo'];
+        $total = file_exists($file) ? count(json_decode(file_get_contents($file), true) ?: []) : 0;
+        $result[] = ['slug' => $slug, 'nome' => $meta['nome'], 'arquivo' => $meta['arquivo'], 'total' => $total, 'criada_em' => $meta['criada_em'] ?? ''];
+    }
+    echo json_encode($result);
+    exit;
+}
+
+if ($action === 'lista_extrair') {
+    if ($_SESSION['dash_user']['role'] === 'viewer') { http_response_code(403); exit; }
+    if (!defined('ANTHROPIC_KEY')) { http_response_code(500); echo json_encode(['error' => 'API key não configurada']); exit; }
+    if (empty($_FILES['arquivo'])) { http_response_code(400); echo json_encode(['error' => 'Nenhum arquivo enviado']); exit; }
+
+    $file = $_FILES['arquivo'];
+    $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $tmp  = $file['tmp_name'];
+
+    if ($file['size'] > 10 * 1024 * 1024) { http_response_code(400); echo json_encode(['error' => 'Arquivo muito grande (máx. 10 MB)']); exit; }
+
+    $prompt = "Analise o conteúdo deste arquivo e extraia todos os contatos/pessoas encontrados.\n\nRetorne SOMENTE um array JSON válido, sem texto adicional, comentários ou markdown. Cada objeto deve ter os campos disponíveis:\n- nome (string, obrigatório)\n- telefone (string: apenas dígitos, formato 55DDXXXXXXXXX — se tiver só DDD+número sem DDI, adicione 55; se for número de 8 dígitos sem DDD, tente inferir pelo contexto)\n- email (string)\n- bairro (string)\n- religiao (string)\n- sexo (\"Masculino\" ou \"Feminino\")\n- idade (string)\n- vip (\"Sim\" ou \"\")\n\nOmita campos ausentes no arquivo. Se nenhum contato for encontrado, retorne [].";
+
+    $messages = [];
+    if ($ext === 'pdf') {
+        $b64 = base64_encode(file_get_contents($tmp));
+        $messages[] = ['role' => 'user', 'content' => [
+            ['type' => 'document', 'source' => ['type' => 'base64', 'media_type' => 'application/pdf', 'data' => $b64]],
+            ['type' => 'text', 'text' => $prompt],
+        ]];
+    } else {
+        $content    = file_get_contents($tmp);
+        $messages[] = ['role' => 'user', 'content' => "Arquivo: {$file['name']}\n\nConteúdo:\n{$content}\n\n{$prompt}"];
+    }
+
+    $ch = curl_init('https://api.anthropic.com/v1/messages');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 90,
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/json',
+            'x-api-key: ' . ANTHROPIC_KEY,
+            'anthropic-version: 2023-06-01',
+            'anthropic-beta: pdfs-2024-09-25',
+        ],
+        CURLOPT_POSTFIELDS => json_encode([
+            'model'      => 'claude-sonnet-4-6',
+            'max_tokens' => 8192,
+            'messages'   => $messages,
+        ]),
+        CURLOPT_SSL_VERIFYPEER => false,
+    ]);
+    $res  = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($code !== 200) { http_response_code(502); echo json_encode(['error' => "Erro na API Claude (HTTP $code)"]); exit; }
+
+    $data = json_decode($res, true);
+    $text = $data['content'][0]['text'] ?? '';
+
+    // Extrai o JSON do texto retornado
+    if (preg_match('/\[[\s\S]*\]/u', $text, $m)) {
+        $contacts = json_decode($m[0], true);
+        if (is_array($contacts)) {
+            echo json_encode(['ok' => true, 'contacts' => $contacts, 'total' => count($contacts)]);
+            exit;
+        }
+    }
+
+    echo json_encode(['error' => 'Não foi possível extrair contatos do arquivo', 'raw' => mb_substr($text, 0, 500)]);
+    exit;
+}
+
+if ($action === 'lista_salvar') {
+    if ($_SESSION['dash_user']['role'] === 'viewer') { http_response_code(403); exit; }
+
+    $data     = json_decode(file_get_contents('php://input'), true);
+    $nome     = trim($data['nome'] ?? '');
+    $contacts = $data['contacts'] ?? [];
+    if (!$nome || empty($contacts)) { http_response_code(400); echo json_encode(['error' => 'Nome e contatos são obrigatórios']); exit; }
+
+    // Slug único
+    $slug     = preg_replace('/[^a-z0-9]+/', '-', strtolower(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $nome)));
+    $slug     = trim($slug, '-') ?: 'lista';
+    $listas   = loadListasIndex();
+    $base     = $slug; $i = 1;
+    while (isset($listas[$slug]) || file_exists(ROOT . '/envios/' . $slug . '.json')) {
+        $slug = $base . '-' . $i++;
+    }
+    $arquivo = $slug . '.json';
+
+    // Normaliza e adiciona ids/timestamps
+    $now = date('c');
+    foreach ($contacts as &$c) {
+        if (empty($c['id']))            $c['id']            = uniqid();
+        if (empty($c['solicitacao_iso'])) $c['solicitacao_iso'] = $now;
+    }
+    unset($c);
+
+    file_put_contents(ROOT . '/envios/' . $arquivo, json_encode(array_values($contacts), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+
+    $listas[$slug] = ['nome' => $nome, 'arquivo' => $arquivo, 'criada_em' => $now];
+    file_put_contents(LISTAS_INDEX, json_encode($listas, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+
+    echo json_encode(['ok' => true, 'slug' => $slug, 'nome' => $nome, 'arquivo' => $arquivo, 'total' => count($contacts)]);
     exit;
 }
 

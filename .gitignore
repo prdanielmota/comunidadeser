@@ -16,6 +16,8 @@ wp-content/
 .env
 *.env
 config.local.php
+app/config.php
+app/token.php
 
 # OS
 .DS_Store

@@ -33,7 +33,9 @@
       "Bash(git rm:*)",
       "Bash(git commit:*)",
       "Bash(git prune:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(/tmp/audit_summary.txt:*)",
+      "Read(//tmp/**)"
     ]
   }
 }

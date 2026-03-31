@@ -2,7 +2,7 @@
     {
         "id": "1",
         "nome": "Daniel Mota",
-        "usuario": "danielmota",
+        "usuario": "daniel.mota",
         "senha": "$2y$10$KEyi\/IeEjAJdXLrPZhOHzOmxexCTz3yAYWQn77IqJ4qoCnIv\/SsWm",
         "role": "superadmin",
         "sistemas": [

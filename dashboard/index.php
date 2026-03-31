@@ -270,6 +270,7 @@ function roleLbl(string $r): string { return ['superadmin'=>'Superadmin','admin'
 <link rel="stylesheet" href="/assets/ser.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/croppie/2.6.5/croppie.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 .hidden{display:none!important}
 body{margin:0;padding:0}
@@ -606,7 +607,7 @@ body{margin:0;padding:0}
         <div class="stat"><div class="stat-val"><?= $totalAmigos ?></div><div class="stat-lbl">Cadastros (Amigos)</div></div>
         <?php endif; ?>
         <?php if (canSee('envios')): ?>
-        <div class="stat"><div class="stat-val"><?= $enviosTotal ?></div><div class="stat-lbl">Contatos (Envios)</div></div>
+        <div class="stat"><div class="stat-val" id="ov-stat-envios-contatos" data-listas="<?= $enviosTotal + $totalAmigos ?>"><?= $enviosTotal + $totalAmigos ?></div><div class="stat-lbl" id="ov-stat-envios-contatos-lbl">Contatos</div></div>
         <div class="stat"><div class="stat-val" style="<?= $totalOptouts>0?'color:var(--red)':'' ?>"><?= $totalOptouts ?></div><div class="stat-lbl">Opt-outs</div></div>
         <?php endif; ?>
       </div>
@@ -635,7 +636,7 @@ body{margin:0;padding:0}
           <div class="sys-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/></svg></div>
           <div class="sys-name">Envios</div>
           <div class="sys-desc">Disparos em massa, opt-outs e histórico de transmissões</div>
-          <div><div class="sys-stat"><?= $enviosTotal ?></div><div class="sys-lbl">contatos</div></div>
+          <div><div class="sys-stat" id="ov-sys-envios-contatos" data-listas="<?= $enviosTotal + $totalAmigos ?>"><?= $enviosTotal + $totalAmigos ?></div><div class="sys-lbl" id="ov-sys-envios-contatos-lbl">contatos</div></div>
           <div class="sys-footer"><a href="/envios/" class="link-ext" onclick="event.stopPropagation()" target="_blank">Transmissão ↗</a></div>
         </div>
         <?php endif; ?>
@@ -873,9 +874,13 @@ body{margin:0;padding:0}
         <div class="panel">
           <div class="panel-hd">
             <span class="panel-title">Base de Contatos</span>
-            <div style="display:flex;gap:4px" id="env-list-selector">
-              <button class="btn btn-outline btn-xs on" onclick="changeEnvList('novo-tempo', this)">Novo Tempo</button>
-              <button class="btn btn-outline btn-xs" onclick="changeEnvList('conectados-run', this)">Conectados Run</button>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <div style="display:flex;gap:4px;flex-wrap:wrap" id="env-list-selector">
+                <span style="font-size:.75rem;color:var(--text-muted)">Carregando listas…</span>
+              </div>
+              <?php if (!isViewer()): ?>
+              <button class="btn btn-gold btn-sm" onclick="openImportModal()" style="white-space:nowrap">+ Importar via IA</button>
+              <?php endif; ?>
             </div>
           </div>
           <div class="panel-body" style="padding:0">
@@ -886,7 +891,7 @@ body{margin:0;padding:0}
               <table class="tbl">
                 <thead><tr><th>Nome</th><th>Bairro</th><th>Religião</th><th>WhatsApp</th><th>Status</th><th>Ações</th></tr></thead>
                 <tbody id="env-contatos-list">
-                  <tr><td colspan="6" class="empty-msg">Clique em "Listas" para carregar...</td></tr>
+                  <tr><td colspan="6" class="empty-msg">Selecione uma lista para carregar…</td></tr>
                 </tbody>
               </table>
             </div>
@@ -967,14 +972,14 @@ body{margin:0;padding:0}
       <div class="sub-tabs">
         <button class="sub-tab on" data-target="env-overview" onclick="showSub(this)">Visão Geral</button>
         <?php if (!isViewer()): ?>
-        <button class="sub-tab" data-target="env-disparo" onclick="showSub(this);if(!window._envLoaded)loadEnviosContatos()">Novo Disparo</button>
+        <button class="sub-tab" data-target="env-disparo" onclick="showSub(this);if(!window._dispListasData.length)loadDispListasData()">Novo Disparo</button>
         <?php endif; ?>
         <button class="sub-tab" data-target="env-historico" onclick="showSub(this)">Histórico</button>
       </div>
 
       <div id="env-overview" class="sub-sec">
         <div class="stats" style="margin-bottom:1.1rem">
-          <div class="stat"><div class="stat-val"><?= $enviosTotal ?></div><div class="stat-lbl">Contatos</div></div>
+          <div class="stat"><div class="stat-val" id="env-stat-contatos" data-listas="<?= $enviosTotal + $totalAmigos ?>"><?= $enviosTotal + $totalAmigos ?></div><div class="stat-lbl" id="env-stat-contatos-lbl">Contatos</div></div>
           <div class="stat"><div class="stat-val" style="<?= $totalOptouts>0?'color:var(--red)':'' ?>"><?= $totalOptouts ?></div><div class="stat-lbl">Opt-outs</div></div>
           <div class="stat"><div class="stat-val"><?= $enviosTotal>0?round($totalOptouts/$enviosTotal*100,1).'%':'—' ?></div><div class="stat-lbl">Taxa opt-out</div></div>
           <div class="stat"><div class="stat-val"><?= count($logs) ?></div><div class="stat-lbl">Disparos</div></div>
@@ -1016,9 +1021,12 @@ body{margin:0;padding:0}
 
               <div>
                 <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem">Fonte</div>
-                <div style="display:flex;gap:.3rem">
+                <div style="display:flex;gap:.3rem;flex-wrap:wrap">
                   <button class="flt-btn on" id="disp-src-listas" onclick="setDispSource('listas')">Listas</button>
                   <button class="flt-btn" id="disp-src-amigos" onclick="setDispSource('amigos')">Amigos</button>
+                  <?php if (canSee('app')): ?>
+                  <button class="flt-btn" id="disp-src-membros" onclick="setDispSource('membros')">Membros</button>
+                  <?php endif; ?>
                 </div>
               </div>
 
@@ -1026,9 +1034,8 @@ body{margin:0;padding:0}
               <div id="disp-listas-filters" style="display:flex;flex-direction:column;gap:.8rem">
                 <div>
                   <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem">Lista</div>
-                  <div style="display:flex;gap:.3rem;flex-wrap:wrap">
-                    <button class="flt-btn on" id="disp-lst-nt" onclick="setDispLista('novo-tempo',this)">Novo Tempo</button>
-                    <button class="flt-btn" id="disp-lst-cr" onclick="setDispLista('conectados-run',this)">Conectados Run</button>
+                  <div style="display:flex;gap:.3rem;flex-wrap:wrap" id="disp-lista-selector">
+                    <span style="font-size:.75rem;color:var(--text-muted)">Carregando…</span>
                   </div>
                 </div>
                 <div>
@@ -1075,6 +1082,26 @@ body{margin:0;padding:0}
                 </div>
               </div>
 
+              <!-- Filtros: Membros -->
+              <?php if (canSee('app')): ?>
+              <div id="disp-membros-filters" style="display:none;flex-direction:column;gap:.8rem">
+                <div>
+                  <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem">Cidade</div>
+                  <select id="disp-f-cidade" onchange="applyEnvDispFilters()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:.5rem .7rem;color:var(--text);font-size:.82rem;font-family:inherit;outline:none">
+                    <option value="">Todas</option>
+                  </select>
+                </div>
+                <div>
+                  <div style="font-size:.68rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem">Contato</div>
+                  <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+                    <button class="flt-btn on" id="disp-mb-ch-all"   onclick="setDispMbContato('')">Todos</button>
+                    <button class="flt-btn"    id="disp-mb-ch-wpp"   onclick="setDispMbContato('wpp')">Com WhatsApp</button>
+                    <button class="flt-btn"    id="disp-mb-ch-email" onclick="setDispMbContato('email')">Com E-mail</button>
+                  </div>
+                </div>
+              </div>
+              <?php endif; ?>
+
               <div style="padding:.65rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);text-align:center">
                 <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:.15rem">Contatos selecionados</div>
                 <div style="font-size:1.5rem;font-weight:700;color:var(--gold)" id="env-disp-total">…</div>
@@ -1107,12 +1134,13 @@ body{margin:0;padding:0}
                 <input type="text" id="env-disp-subject" placeholder="Assunto da mensagem">
               </div>
               <div class="form-row">
-                <label>Mensagem</label>
-                <textarea id="env-disp-msg" style="min-height:160px" placeholder="Olá {nome}, tudo bem?&#10;&#10;..."></textarea>
-                <div style="margin-top:.4rem;display:flex;gap:.4rem">
-                  <button class="btn-icon" title="Inserir {nome}" onclick="insertTag('{nome}')">🏷️ {nome}</button>
-                  <button class="btn-icon" title="Inserir {bairro}" onclick="insertTag('{bairro}')">📍 {bairro}</button>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.35rem">
+                  <label style="margin:0">Mensagem</label>
+                  <div style="display:flex;gap:.3rem">
+                    <button type="button" class="btn btn-outline btn-xs" onclick="insertTag('{nome}')" title="Inserir variável nome">{nome}</button>
+                  </div>
                 </div>
+                <textarea id="env-disp-msg" style="min-height:160px" placeholder="Olá {nome}, tudo bem?&#10;&#10;..."></textarea>
               </div>
               <div style="margin-top:1rem;display:flex;gap:.75rem">
                 <button class="btn btn-gold" style="padding:.7rem 2rem" onclick="startEnviosDisparo()">Iniciar Disparo</button>
@@ -1431,6 +1459,83 @@ body{margin:0;padding:0}
   </div>
 </div>
 
+<!-- MODAL: IMPORTAR LISTA VIA IA -->
+<div class="overlay" id="ov-import-lista" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal" style="max-width:720px;width:95%">
+
+    <!-- Estágio 1: Upload -->
+    <div id="import-stage-upload">
+      <div class="modal-hd">
+        <span class="modal-title">Importar Lista via IA</span>
+        <button class="modal-close" onclick="closeImportModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="import-drop-zone" onclick="document.getElementById('import-file-input').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="event.preventDefault();this.classList.remove('drag-over');handleImportDrop(event.dataTransfer.files[0])" style="border:2px dashed var(--border);border-radius:12px;padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s">
+          <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="color:var(--text-muted);margin-bottom:.75rem"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <p style="margin:.3rem 0;font-size:.95rem;color:var(--text)">Arraste um arquivo ou clique para selecionar</p>
+          <p style="margin:0;font-size:.75rem;color:var(--text-muted)">PDF, TXT, CSV ou XLSX · máx. 10 MB</p>
+          <input type="file" id="import-file-input" accept=".txt,.pdf,.csv,.xlsx" style="display:none" onchange="handleImportFile(this.files[0])">
+        </div>
+        <p style="margin:.875rem 0 0;font-size:.8rem;color:var(--text-muted);text-align:center">O Claude irá identificar e estruturar automaticamente todos os contatos do arquivo.</p>
+      </div>
+    </div>
+
+    <!-- Estágio 2: Processando -->
+    <div id="import-stage-loading" style="display:none">
+      <div class="modal-body" style="text-align:center;padding:3rem 2rem">
+        <div style="width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.25rem"></div>
+        <p style="font-size:1rem;font-weight:600;color:var(--text);margin:0 0 .4rem">Analisando com IA…</p>
+        <p id="import-loading-filename" style="font-size:.8rem;color:var(--text-muted);margin:0"></p>
+      </div>
+    </div>
+
+    <!-- Estágio 3: Preview -->
+    <div id="import-stage-preview" style="display:none">
+      <div class="modal-hd">
+        <span class="modal-title">Revisar Contatos Extraídos</span>
+        <button class="modal-close" onclick="closeImportModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row" style="margin-bottom:.875rem">
+          <label>Nome da lista <span style="color:var(--red)">*</span></label>
+          <input type="text" id="import-lista-nome" placeholder="Ex: Retiro 2026, Culto de Páscoa…">
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+          <span id="import-preview-count" style="font-size:.82rem;color:var(--text-muted)"></span>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-file-input').click()">Trocar arquivo</button>
+        </div>
+        <div class="tbl-wrap" style="max-height:300px;overflow-y:auto;border-radius:8px">
+          <table class="tbl">
+            <thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Bairro</th><th>Sexo</th></tr></thead>
+            <tbody id="import-preview-list"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-ft" style="display:flex;justify-content:flex-end;gap:.5rem;padding:1rem 1.5rem;border-top:1px solid var(--border)">
+        <button class="btn btn-outline" onclick="closeImportModal()">Cancelar</button>
+        <button class="btn btn-gold" onclick="saveImportedList()" id="import-save-btn">Incluir no sistema</button>
+      </div>
+    </div>
+
+    <!-- Estágio 4: Erro -->
+    <div id="import-stage-error" style="display:none">
+      <div class="modal-hd">
+        <span class="modal-title">Erro na importação</span>
+        <button class="modal-close" onclick="closeImportModal()">×</button>
+      </div>
+      <div class="modal-body" style="text-align:center;padding:2rem">
+        <p style="color:var(--red);font-size:.95rem;margin:0 0 .5rem" id="import-error-msg"></p>
+        <button class="btn btn-outline" onclick="importSetStage('upload')">Tentar novamente</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+<style>
+#import-drop-zone.drag-over { border-color:var(--gold); background:var(--gold-glow); }
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
+
 <!-- MODAL: ENVIOS STATUS -->
 <div class="overlay" id="ov-env-status" onclick="if(event.target===this)closeEnvStatus()">
   <div class="modal">
@@ -1704,12 +1809,13 @@ async function deleteAmiEvent(id) {
 }
 
 // Memória global
-window._amiData = [];
-window._envData = [];
-window._currentEnvList = 'novo-tempo';
-window._amiClass = '';
-window._dispSource = 'listas';
-window._dispLista  = 'novo-tempo';
+window._amiData        = [];
+window._envData        = [];
+window._dispListasData = [];   // dados mesclados das listas selecionadas p/ disparo
+window._dispListas     = [];   // slugs selecionados p/ disparo (multi)
+window._currentEnvList = '';
+window._amiClass       = '';
+window._dispSource     = 'listas';
 
 // Re-renderizar tabelas
 async function loadAmigosCadastros() {
@@ -1780,7 +1886,8 @@ function showSec(id) {
     closeSb();
     window.scrollTo(0, 0);
 
-    if (id === 'envios' && !window._envLoaded) loadEnviosContatos();
+    if (id === 'envios' && !window._envLoaded)       loadEnviosContatos();
+    if (id === 'envios' && !window._dispListasData.length) loadDispListasData();
     if (id === 'amigos' && !window._amiLoaded) loadAmigosCadastros();
     if (id === 'app'    && !window._mbLoaded)  mbEnsureData();
 }
@@ -1795,6 +1902,7 @@ function showSub(btn) {
 async function changeEnvList(list, btn) {
     window._currentEnvList = list;
     document.querySelectorAll('#env-list-selector .btn').forEach(b => b.classList.toggle('on', b === btn));
+    window._envLoaded = false;
     loadEnviosContatos();
 }
 
@@ -1832,9 +1940,6 @@ function renderEnvContatos(data) {
         </tr>
     `).join('') + (data.length > 100 ? `<tr><td colspan="6" style="text-align:center;padding:.5rem;font-size:.75rem;color:var(--text-muted)">+ ${data.length - 100} registros ocultos (use a busca)</td></tr>` : '');
 
-    const activeCount = window._envData.filter(c => !c.opt_out).length;
-    const totalEl = document.getElementById('env-disp-total');
-    if (totalEl) totalEl.textContent = activeCount;
 }
 
 function filterEnvContatos() {
@@ -1876,10 +1981,12 @@ function updateEnvChInfo() {
     if (!el) return;
     const contacts = window._dispFiltered ?? [];
     if (!contacts.length) { el.textContent = ''; return; }
-    const isAmigos = window._dispSource === 'amigos';
-    const wppField  = isAmigos ? 'wpp' : 'telefone';
+    const isMembros = window._dispSource === 'membros';
+    const isAmigos  = window._dispSource === 'amigos';
+    const wppField  = isAmigos ? 'wpp' : isMembros ? 'WHATS' : 'telefone';
+    const emailField = isMembros ? 'EMAIL' : 'email';
     const withWpp   = contacts.filter(c => c[wppField]).length;
-    const withEmail = contacts.filter(c => c.email).length;
+    const withEmail = contacts.filter(c => c[emailField]).length;
     const parts = [];
     if (window._dispChannel !== 'email') parts.push(`${withWpp} com WhatsApp`);
     if (window._dispChannel !== 'whatsapp') parts.push(`${withEmail} com e-mail`);
@@ -1890,37 +1997,66 @@ function setDispSource(src) {
     window._dispSource = src;
     document.getElementById('disp-src-listas')?.classList.toggle('on', src === 'listas');
     document.getElementById('disp-src-amigos')?.classList.toggle('on', src === 'amigos');
+    document.getElementById('disp-src-membros')?.classList.toggle('on', src === 'membros');
     const lf = document.getElementById('disp-listas-filters');
     const af = document.getElementById('disp-amigos-filters');
-    if (lf) lf.style.display = src === 'listas' ? 'flex' : 'none';
-    if (af) af.style.display = src === 'amigos' ? 'flex' : 'none';
+    const mf = document.getElementById('disp-membros-filters');
+    if (lf) lf.style.display = src === 'listas'  ? 'flex' : 'none';
+    if (af) af.style.display = src === 'amigos'  ? 'flex' : 'none';
+    if (mf) mf.style.display = src === 'membros' ? 'flex' : 'none';
     const note = document.getElementById('env-disp-total-note');
-    if (note) note.textContent = src === 'amigos' ? 'de amigos cadastrados' : 'excluindo opt-outs';
+    if (note) note.textContent = src === 'amigos' ? 'de amigos cadastrados' : src === 'membros' ? 'de membros do app' : 'excluindo opt-outs';
     if (src === 'amigos' && !window._amiLoaded) {
         loadAmigosCadastros().then(() => applyEnvDispFilters());
+    } else if (src === 'membros' && !window._mbLoaded) {
+        mbEnsureData().then(() => { populateMembrosFilters(); applyEnvDispFilters(); });
+    } else if (src === 'listas' && !window._dispListasData.length) {
+        loadDispListasData();
     } else {
+        if (src === 'membros') populateMembrosFilters();
         applyEnvDispFilters();
     }
 }
 
-async function setDispLista(lista, btn) {
-    window._dispLista = lista;
-    document.getElementById('disp-lst-nt')?.classList.toggle('on', lista === 'novo-tempo');
-    document.getElementById('disp-lst-cr')?.classList.toggle('on', lista === 'conectados-run');
-    // Se a lista atual do painel não coincide, recarrega
-    if (window._currentEnvList !== lista) {
-        window._currentEnvList = lista;
-        window._envLoaded = false;
-        await loadEnviosContatos();
+async function toggleDispLista(slug, btn) {
+    const idx = window._dispListas.indexOf(slug);
+    if (idx === -1) {
+        window._dispListas.push(slug);
+        btn.classList.add('on');
     } else {
-        applyEnvDispFilters();
+        if (window._dispListas.length === 1) return; // mínimo 1 lista
+        window._dispListas.splice(idx, 1);
+        btn.classList.remove('on');
     }
+    await loadDispListasData();
+}
+
+async function loadDispListasData() {
+    if (!window._dispListas.length) return;
+    const slugs = window._dispListas;
+
+    // Busca todas as listas selecionadas em paralelo
+    const results = await Promise.all(
+        slugs.map(slug => fetch(`api.php?action=envios_contatos&file=${slug}`).then(r => r.json()).catch(() => []))
+    );
+
+    // Mescla e deduplica por telefone (mantém primeiro encontrado)
+    const seen = new Set();
+    const merged = [];
+    results.flat().forEach((c, i) => {
+        const key = (c.telefone || c.telefone2 || c.email || c.nome || i).toString().replace(/\D/g, '') || String(i);
+        if (!seen.has(key)) { seen.add(key); merged.push({...c, _idx: merged.length}); }
+    });
+    window._dispListasData = merged;
+    populateEnvFilters();
+    applyEnvDispFilters();
 }
 
 function populateEnvFilters() {
-    if (!window._envData || !window._envData.length) return;
-    const bairros   = [...new Set(window._envData.map(c => c.bairro).filter(Boolean))].sort();
-    const religioes = [...new Set(window._envData.map(c => c.religiao).filter(Boolean))].sort();
+    const base = window._dispListasData?.length ? window._dispListasData : (window._envData || []);
+    if (!base.length) return;
+    const bairros   = [...new Set(base.map(c => c.bairro).filter(Boolean))].sort();
+    const religioes = [...new Set(base.map(c => c.religiao).filter(Boolean))].sort();
     const sel1 = document.getElementById('disp-f-bairro');
     const sel2 = document.getElementById('disp-f-religiao');
     if (sel1) { const cur = sel1.value; sel1.innerHTML = '<option value="">Todos</option>' + bairros.map(v => `<option value="${v}"${v===cur?' selected':''}>${v}</option>`).join(''); }
@@ -1935,10 +2071,19 @@ function applyEnvDispFilters() {
             if (cl && (c.classificacao || '') !== cl) return false;
             return true;
         });
+    } else if (window._dispSource === 'membros') {
+        const cidade  = document.getElementById('disp-f-cidade')?.value || '';
+        const contato = window._dispMbContato || '';
+        window._dispFiltered = (mbMembers || []).filter(m => {
+            if (cidade && (m.CITY || '') !== cidade) return false;
+            if (contato === 'wpp'   && !m.WHATS) return false;
+            if (contato === 'email' && !m.EMAIL) return false;
+            return !!(m.WHATS || m.EMAIL);
+        });
     } else {
         const bairro   = document.getElementById('disp-f-bairro')?.value   || '';
         const religiao = document.getElementById('disp-f-religiao')?.value || '';
-        window._dispFiltered = (window._envData || []).filter(c => {
+        window._dispFiltered = (window._dispListasData || []).filter(c => {
             if (c.opt_out) return false;
             if (bairro   && (c.bairro   || '') !== bairro)   return false;
             if (religiao && (c.religiao || '') !== religiao) return false;
@@ -1967,15 +2112,33 @@ function setDispVip(v) {
     applyEnvDispFilters();
 }
 
+window._dispMbContato = '';
+function setDispMbContato(v) {
+    window._dispMbContato = v;
+    document.getElementById('disp-mb-ch-all')?.classList.toggle('on', !v);
+    document.getElementById('disp-mb-ch-wpp')?.classList.toggle('on', v === 'wpp');
+    document.getElementById('disp-mb-ch-email')?.classList.toggle('on', v === 'email');
+    applyEnvDispFilters();
+}
+
+function populateMembrosFilters() {
+    const cidades = [...new Set((mbMembers || []).map(m => m.CITY).filter(Boolean))].sort();
+    const sel = document.getElementById('disp-f-cidade');
+    if (sel) { const cur = sel.value; sel.innerHTML = '<option value="">Todas</option>' + cidades.map(v => `<option value="${v}"${v===cur?' selected':''}>${v}</option>`).join(''); }
+}
+
 function resetEnvFilters() {
     const s1 = document.getElementById('disp-f-bairro');
     const s2 = document.getElementById('disp-f-religiao');
     const s3 = document.getElementById('disp-f-class');
+    const s4 = document.getElementById('disp-f-cidade');
     if (s1) s1.value = '';
     if (s2) s2.value = '';
     if (s3) s3.value = '';
+    if (s4) s4.value = '';
     setDispSexo('');
     setDispVip('');
+    setDispMbContato('');
 }
 
 async function startEnviosDisparo() {
@@ -1988,11 +2151,12 @@ async function startEnviosDisparo() {
     if (!msg)  return alert('Digite a mensagem.');
     if (!raw.length) return alert('Nenhum contato no público selecionado.');
     if (!confirm(`Iniciar disparo "${name}" para ${raw.length} contato(s) via ${channel}?`)) return;
-    // Normaliza: amigos usam 'wpp', listas usam 'telefone'
-    const contacts = raw.map(c => window._dispSource === 'amigos'
-        ? { nome: c.nome, telefone: c.wpp, email: c.email }
-        : c
-    );
+    // Normaliza campos por fonte
+    const contacts = raw.map(c => {
+        if (window._dispSource === 'amigos')  return { nome: c.nome,  telefone: c.wpp,   email: c.email };
+        if (window._dispSource === 'membros') return { nome: c.NAME,  telefone: c.WHATS, email: c.EMAIL };
+        return c;
+    });
     const res = await fetch('api.php?action=envios_disparar', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ name, message: msg, subject, contacts, channel })
@@ -2566,10 +2730,178 @@ async function loadAppMembers() {
                 const el = document.getElementById(id);
                 if (el && el.textContent === '…') el.textContent = d.total.toLocaleString('pt-BR');
             });
+            <?php if (canSee('envios') && canSee('app')): ?>
+            [
+                ['env-stat-contatos',         'env-stat-contatos-lbl',         'Contatos (Amigos - Listas - Membros)'],
+                ['ov-stat-envios-contatos',    'ov-stat-envios-contatos-lbl',   'Contatos (Amigos - Listas - Membros)'],
+                ['ov-sys-envios-contatos',     'ov-sys-envios-contatos-lbl',    'contatos (Amigos - Listas - Membros)'],
+            ].forEach(([valId, lblId, novoLbl]) => {
+                const el  = document.getElementById(valId);
+                const lbl = document.getElementById(lblId);
+                if (el) { const listas = parseInt(el.dataset.listas) || 0; el.textContent = (listas + d.total).toLocaleString('pt-BR'); }
+                if (lbl) lbl.textContent = novoLbl;
+            });
+            <?php endif; ?>
         }
     } catch {}
 }
 <?php if (canSee('app')): ?>loadAppMembers();<?php endif; ?>
+
+// ── Listas dinâmicas ─────────────────────────────────────────────────────────
+window._listasIndex = [];
+
+async function loadListasIndex() {
+    try {
+        const r = await fetch('api.php?action=lista_index');
+        window._listasIndex = await r.json();
+        renderListSelectors();
+        // Pré-carrega dados mesclados de disparo em background
+        if (window._listasIndex.length) loadDispListasData();
+    } catch {}
+}
+
+function renderListSelectors() {
+    const listas = window._listasIndex;
+    if (!listas.length) return;
+
+    // Seletor de navegação (single-select)
+    const sel = document.getElementById('env-list-selector');
+    if (sel) {
+        if (!window._currentEnvList || !listas.find(l => l.slug === window._currentEnvList))
+            window._currentEnvList = listas[0].slug;
+        sel.innerHTML = listas.map(l =>
+            `<button class="btn btn-outline btn-xs${l.slug === window._currentEnvList ? ' on' : ''}" onclick="changeEnvList('${l.slug}', this)">${l.nome}</button>`
+        ).join('');
+    }
+
+    // Seletor de disparo (multi-select — todos marcados por padrão)
+    const dSel = document.getElementById('disp-lista-selector');
+    if (dSel) {
+        if (!window._dispListas.length)
+            window._dispListas = listas.map(l => l.slug);
+        dSel.innerHTML = listas.map(l =>
+            `<button class="flt-btn${window._dispListas.includes(l.slug) ? ' on' : ''}" onclick="toggleDispLista('${l.slug}', this)">${l.nome} <span style="opacity:.55;font-size:.7em">(${l.total})</span></button>`
+        ).join('');
+    }
+}
+
+loadListasIndex();
+
+// ── Importação via IA ─────────────────────────────────────────────────────────
+let _importContacts = [];
+let _importCurrentFile = null;
+
+function openImportModal() {
+    importSetStage('upload');
+    document.getElementById('ov-import-lista').classList.add('open');
+}
+function closeImportModal() {
+    document.getElementById('ov-import-lista').classList.remove('open');
+    _importContacts = [];
+    _importCurrentFile = null;
+    document.getElementById('import-file-input').value = '';
+    document.getElementById('import-lista-nome').value = '';
+}
+function importSetStage(stage) {
+    ['upload','loading','preview','error'].forEach(s =>
+        document.getElementById(`import-stage-${s}`).style.display = s === stage ? '' : 'none'
+    );
+}
+
+function handleImportDrop(file) { if (file) handleImportFile(file); }
+
+async function handleImportFile(file) {
+    if (!file) return;
+    _importCurrentFile = file;
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    importSetStage('loading');
+    document.getElementById('import-loading-filename').textContent = file.name;
+
+    let sendFile = file;
+
+    // XLSX → converte para CSV no browser antes de enviar
+    if (ext === 'xlsx' || ext === 'xls') {
+        try {
+            const ab  = await file.arrayBuffer();
+            const wb  = XLSX.read(ab, { type: 'array' });
+            const ws  = wb.Sheets[wb.SheetNames[0]];
+            const csv = XLSX.utils.sheet_to_csv(ws);
+            sendFile  = new File([csv], file.name.replace(/\.xlsx?$/i, '.csv'), { type: 'text/csv' });
+        } catch(e) {
+            importSetStage('error');
+            document.getElementById('import-error-msg').textContent = 'Erro ao ler o arquivo Excel: ' + e.message;
+            return;
+        }
+    }
+
+    const fd = new FormData();
+    fd.append('arquivo', sendFile);
+
+    try {
+        const r    = await fetch('api.php?action=lista_extrair', { method: 'POST', body: fd });
+        const data = await r.json();
+        if (!r.ok || data.error) {
+            importSetStage('error');
+            document.getElementById('import-error-msg').textContent = data.error || 'Erro desconhecido';
+            return;
+        }
+        _importContacts = data.contacts || [];
+        renderImportPreview(_importContacts);
+        importSetStage('preview');
+    } catch(e) {
+        importSetStage('error');
+        document.getElementById('import-error-msg').textContent = 'Falha na comunicação com o servidor.';
+    }
+}
+
+function renderImportPreview(contacts) {
+    document.getElementById('import-preview-count').textContent =
+        `${contacts.length} contato${contacts.length !== 1 ? 's' : ''} encontrado${contacts.length !== 1 ? 's' : ''}`;
+
+    const tbody = document.getElementById('import-preview-list');
+    if (!contacts.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Nenhum contato encontrado no arquivo</td></tr>';
+        return;
+    }
+    tbody.innerHTML = contacts.slice(0, 100).map(c => `
+        <tr>
+            <td><strong>${c.nome || '—'}</strong></td>
+            <td style="font-size:.78rem;color:var(--green)">${c.telefone || '—'}</td>
+            <td style="font-size:.78rem">${c.email || '—'}</td>
+            <td style="font-size:.78rem">${c.bairro || '—'}</td>
+            <td style="font-size:.78rem">${c.sexo || '—'}</td>
+        </tr>
+    `).join('') + (contacts.length > 100 ? `<tr><td colspan="5" style="text-align:center;font-size:.72rem;color:var(--text-muted);padding:.4rem">+ ${contacts.length - 100} contatos ocultos</td></tr>` : '');
+}
+
+async function saveImportedList() {
+    const nome = (document.getElementById('import-lista-nome').value || '').trim();
+    if (!nome) { alert('Dê um nome para a lista antes de salvar.'); return; }
+    if (!_importContacts.length) { alert('Nenhum contato para salvar.'); return; }
+
+    const btn = document.getElementById('import-save-btn');
+    btn.disabled = true; btn.textContent = 'Salvando…';
+
+    try {
+        const r    = await fetch('api.php?action=lista_salvar', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, contacts: _importContacts })
+        });
+        const data = await r.json();
+        if (!r.ok || !data.ok) { alert(data.error || 'Erro ao salvar.'); btn.disabled = false; btn.textContent = 'Incluir no sistema'; return; }
+
+        showToast('success', `Lista "${data.nome}" criada com ${data.total} contatos.`);
+        closeImportModal();
+        await loadListasIndex();
+        // Seleciona a lista recém-criada
+        const newBtn = document.querySelector(`#env-list-selector .btn[onclick*="${data.slug}"]`);
+        if (newBtn) changeEnvList(data.slug, newBtn);
+    } catch {
+        alert('Erro ao salvar a lista.');
+    }
+    btn.disabled = false; btn.textContent = 'Incluir no sistema';
+}
 
 const initSec = '<?= esc($_GET['sec'] ?? 'overview') ?>';
 if (initSec !== 'overview') showSec(initSec);
